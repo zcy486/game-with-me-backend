@@ -1,9 +1,8 @@
 "use strict";
 
-//TODO Configuration variables
-const port = "";
-const mongoURI = "";
-const JwtSecret = "";
+const port = "4000";
+const mongoURI = "mongodb://localhost:27017/userdb";
+const JwtSecret = "very secret secret";
 
 module.exports = {
     port,
