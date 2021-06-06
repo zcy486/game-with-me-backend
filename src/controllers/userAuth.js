@@ -85,7 +85,6 @@ const register = async (req, res) => {
         const newUser = {
             username: req.body.username,
             password: hashedPassword,
-            isPremium: false,
         }
 
         let user = await UserModel.create(newUser);
@@ -94,6 +93,8 @@ const register = async (req, res) => {
         const token = jwt.sign({
             _id: user._id,
             username: user.username,
+            age: user.age,
+            gender: user.gender,
             isPremium: user.isPremium,
         }, config.JwtSecret, {
             expiresIn: 86400 //24hrs

@@ -14,15 +14,21 @@ const UserSchema = new mongoose.Schema({
     },
     age: {
         type: Number,
-        min: 0,
+        min: -1,
+        max: 999,
+        required: true,
+        default: -1,
     },
     gender: {
         type: String,
-        enum: ["male", "female", "other"],
+        enum: ["male", "female", "other", "not given"],
+        required: true,
+        default: "not given",
     },
     isPremium: {
         type: Boolean,
         required: true,
+        default: false,
     },
 });
 
