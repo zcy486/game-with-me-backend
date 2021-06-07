@@ -6,6 +6,7 @@ const helmet     = require('helmet');
 const middlewares = require('./middlewares');
 
 const userAuthRouter = require('./routes/userAuth');
+const order = require('./routes/order');
 
 const app = express();
 
@@ -24,5 +25,6 @@ app.get('/', (req, res) => {
 
 //Adding routes
 app.use('/auth', userAuthRouter);
+app.use('/order', order);
 
 module.exports = app;
