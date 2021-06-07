@@ -1,7 +1,6 @@
 "use strict";
 
 const mongoose = require("mongoose");
-const Game = require("./game");
 
 // Define schema for posts
 const PostSchema = new mongoose.Schema( {
@@ -10,6 +9,7 @@ const PostSchema = new mongoose.Schema( {
         required: true,
     },
     postType: {
+        type: String,
         enum: ["Carry", "Chill", "All Types"],
         required: true,
     },
@@ -38,12 +38,12 @@ const PostSchema = new mongoose.Schema( {
         required: true,
     },
     gameId: {
-        type: Mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "Game",
         required: true,
     },
     companionId: {
-        type: Mongoose.Schema.Types.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,
     }
