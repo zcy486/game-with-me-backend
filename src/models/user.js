@@ -14,10 +14,10 @@ const UserSchema = new mongoose.Schema({
     },
     age: {
         type: Number,
-        min: -1,
+        min: 0,
         max: 999,
         required: true,
-        default: -1,
+        default: 0,
     },
     gender: {
         type: String,
