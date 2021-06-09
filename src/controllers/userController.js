@@ -45,7 +45,8 @@ const login = async (req, res) => {
             username: user.username,
             age: user.age,
             gender: user.gender,
-            isPremium: user.isPremium
+            isPremium: user.isPremium,
+            balance: user.balance,
         }, config.JwtSecret, {
             expiresIn: 86400, //24hrs
         });
@@ -96,6 +97,7 @@ const register = async (req, res) => {
             age: user.age,
             gender: user.gender,
             isPremium: user.isPremium,
+            balance: user.balance
         }, config.JwtSecret, {
             expiresIn: 86400 //24hrs
         });
@@ -149,7 +151,8 @@ const updateProfile = async (req, res) => {
             username: user.username,
             age: user.age,
             gender: user.gender,
-            isPremium: user.isPremium
+            isPremium: user.isPremium,
+            balance: user.balance,
         }, config.JwtSecret, {
             expiresIn: 86400, //24hrs
         });
@@ -172,9 +175,59 @@ const logout = (req, res) => {
     res.status(200).send({token: null});
 }
 
+
+const updateBalance = async (req, res) => {
+    // check if the body of the request contains all necessary properties
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+
+    // handle the request
+    try {
+        // find and update movie with id
+        let user = await UserModel.findByIdAndUpdate(
+            req.params.id, 
+            {balance: req.body.balance},
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).exec();
+
+        const token = jwt.sign({
+            _id: user._id,
+            username: user.username,
+            age: user.age,
+            gender: user.gender,
+            isPremium: user.isPremium,
+            balance: user.balance,
+        }, config.JwtSecret, {
+            expiresIn: 86400, //24hrs
+        });
+
+        // return updated user
+        return res.status(200).json({
+            token: token,
+        });
+
+
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
+
+
 module.exports = {
     login,
     register,
     updateProfile,
     logout,
+    updateBalance,
 };
