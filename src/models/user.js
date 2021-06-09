@@ -24,6 +24,13 @@ const UserSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
     },
+
+    balance: {
+        type: Number,
+        min:0,
+        required: true,
+        default:0,
+    }
 });
 
 UserSchema.set("versionKey", false);
