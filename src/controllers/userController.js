@@ -85,7 +85,6 @@ const register = async (req, res) => {
         const newUser = {
             username: req.body.username,
             password: hashedPassword,
-            isPremium: false,
         }
 
         let user = await UserModel.create(newUser);
@@ -94,6 +93,8 @@ const register = async (req, res) => {
         const token = jwt.sign({
             _id: user._id,
             username: user.username,
+            age: user.age,
+            gender: user.gender,
             isPremium: user.isPremium,
         }, config.JwtSecret, {
             expiresIn: 86400 //24hrs
@@ -120,23 +121,48 @@ const register = async (req, res) => {
     }
 };
 
-//TODO
-const profile = async (req, res) => {
+const updateProfile = async (req, res) => {
+    // check if the body of the request contains all necessary properties
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+
+    // handle the request
     try {
-        // get user profile from database
-        let user = await UserModel.findById(req.userId)
-            .exec();
+        // find and update user with id
+        let user = await UserModel.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            {
+                new: true,
+                runValidators: true,
+                useFindAndModify: false,
+            }
+        ).exec();
 
-        if (!user)
-            return res.status(404).json({
-                error: "Not Found",
-                message: `User not found`,
-            });
+        //create a token
+        const token = jwt.sign({
+            _id: user._id,
+            username: user.username,
+            age: user.age,
+            gender: user.gender,
+            isPremium: user.isPremium
+        }, config.JwtSecret, {
+            expiresIn: 86400, //24hrs
+        });
 
-        return res.status(200).json(user);
+        // return updated user
+        return res.status(200).json({
+            token: token,
+        });
+
     } catch (err) {
+        console.log(err);
         return res.status(500).json({
-            error: "Internal Server Error",
+            error: "Internal server error",
             message: err.message,
         });
     }
@@ -149,6 +175,6 @@ const logout = (req, res) => {
 module.exports = {
     login,
     register,
-    profile,
+    updateProfile,
     logout,
 };
