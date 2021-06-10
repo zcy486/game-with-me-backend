@@ -8,6 +8,7 @@ const middlewares = require('./middlewares');
 const userRouter = require('./routes/userRouter');
 const order = require('./routes/order');
 const postRouter = require('./routes/post')
+const gameRouter = require('./routes/game')
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.get('/', (req, res) => {
 app.use('/user', userRouter);
 app.use('/order', order);
 app.use('/post', postRouter);
+app.use('/games', gameRouter),
 
 module.exports = app;
