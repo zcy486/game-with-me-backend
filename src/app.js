@@ -7,7 +7,7 @@ const middlewares = require('./middlewares');
 
 const userRouter = require('./routes/userRouter');
 const order = require('./routes/order');
-const post = require('./routes/post');
+
 const app = express();
 
 //Adding middlewares
@@ -26,6 +26,5 @@ app.get('/', (req, res) => {
 //Adding routes
 app.use('/user', userRouter);
 app.use('/order', order);
-app.use('/post', post);
 
 module.exports = app;
