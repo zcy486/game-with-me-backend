@@ -29,6 +29,6 @@ app.get('/', (req, res) => {
 app.use('/user', userRouter);
 app.use('/order', order);
 app.use('/post', postRouter);
-app.use('/games', gameRouter),
+app.use('/game', gameRouter);
 
 module.exports = app;

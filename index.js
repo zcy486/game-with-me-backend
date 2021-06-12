@@ -92,9 +92,6 @@ function createGames(cb) {
             gameCreate("League of Legends", ["OCE", "NA", "LAN", "BR", "EU"], ["PC"], true, callback);
         },
         function (callback) {
-            gameCreate("League of Legends", ["OCE", "NA", "LAN", "BR", "EU"], ["PC"], true, callback);
-        },
-        function (callback) {
             gameCreate("Minecraft", ["International", "Europe", "US", "China"], ["PC", "Switch", "Xbox"], true, callback);
         },
         function (callback) {

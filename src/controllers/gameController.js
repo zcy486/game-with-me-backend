@@ -4,20 +4,14 @@ const gameModel = require("../models/game");
 
 // list games
 const list = async (req, res) => {
-    if (Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-            error: "Bad Request",
-            message: "The request body is empty",
-        });
-    }
     try {
-        let allPosts = await gameModel.find({}).exec();
-        let popularPosts = await gameModel.find({isPopular: true}).exec();
-        const posts = {
-            all: allPosts,
-            popular: popularPosts,
+        let allGames = await gameModel.find({}).exec();
+        let popularGames= await gameModel.find({isPopular: true}).exec();
+        const games = {
+            all: allGames,
+            popular: popularGames,
         }
-        return res.status(200).json(posts);
+        return res.status(200).json(games);
     } catch (err) {
         console.log(err);
         return res.status(500).json({
