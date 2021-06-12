@@ -120,7 +120,8 @@ const remove = async  (req, res) => {
     }
 }
 
-const list = async (req, res) => {
+// list all posts of a given game
+const listByGame = async (req, res) => {
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
             error: "Bad Request",
@@ -139,10 +140,31 @@ const list = async (req, res) => {
     }
 };
 
+// list all posts of a gaming companion
+const listByCompanion = async (req, res) => {
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+    try {
+        let posts = await postModel.find({companionId: req.body.companionId}).exec();
+        return res.status(200).json(posts);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
+
 module.exports = {
     create,
     read,
     updateStatus,
     remove,
-    list,
+    listByGame,
+    listByCompanion,
 };
