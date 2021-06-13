@@ -1,6 +1,7 @@
 "use strict";
 
 const postModel = require("../models/post");
+const gameModel = require("../models/game")
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -129,10 +130,16 @@ const listByGame = async (req, res) => {
         });
     }
     try {
-    let posts = await postModel.find({gameId: req.params.gameId}).exec();
-    return res.status(200).json(posts);
+        let game = await gameModel.findById(req.body.gameId).exec();
+        let posts = await postModel.find({gameId: req.body.gameId}).exec();
+        const response = {
+            name: game.name,
+            servers: game.allServers,
+            platforms: game.allPlatforms,
+            posts: posts,
+        }
+        return res.status(200).json(response);
     } catch (err) {
-        console.log(err);
         return res.status(500).json({
             error: "Internal server error",
             message: err.message,
@@ -159,6 +166,7 @@ const listByCompanion = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     create,
