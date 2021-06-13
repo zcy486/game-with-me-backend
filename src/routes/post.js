@@ -6,12 +6,15 @@ const router = express.Router();
 const middlewares = require("../middlewares");
 const postController = require("../controllers/postController");
 
-router.get( "/", postController.list);
-
 router.post(
     "/",
     middlewares.checkAuthentication,
     postController.create
+);
+
+router.post(
+    "/ofgame",
+    postController.listByGame
 );
 
 router.put(

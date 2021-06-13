@@ -7,4 +7,6 @@ const gameController = require("../controllers/gameController")
 
 router.get( "/", gameController.list);
 
+router.post("/getByName", gameController.getIdByName);
+
 module.exports = router;

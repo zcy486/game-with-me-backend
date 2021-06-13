@@ -37,23 +37,20 @@ server.on('error', (err) => {
 //The following part generates test data on games, posts and users.
 mongoose.Promise = global.Promise;
 
-Game.deleteMany({}, function (err) {
-    if (err) {
-        console.log(err);
+async function gameCreate(name, allServers, allPlatforms, isPopular, cb) {
+    let exist = await Game.exists({name: name});
+    if(!exist) {
+        const gameInfo = {name, allServers, allPlatforms, isPopular};
+        const game = new Game(gameInfo);
+
+        game.save(function (err) {
+            if(err) {
+                cb(err, null);
+                return;
+            }
+            cb(null, game);
+        });
     }
-});
-
-function gameCreate(name, allServers, allPlatforms, isPopular, cb) {
-    const gameInfo = {name, allServers, allPlatforms, isPopular};
-    const game = new Game(gameInfo);
-
-    game.save(function (err) {
-        if(err) {
-            cb(err, null);
-            return;
-        }
-        cb(null, game);
-    });
 }
 
 function createGames(cb) {
@@ -62,7 +59,7 @@ function createGames(cb) {
             gameCreate("Apex Legends", ["Europe", "Korea", "Japan", "North America", "South America"], ["PC", "PS4", "Xbox"], false, callback);
         },
         function (callback) {
-            gameCreate("Animal Crossing: New Horizons", ["N/A"], ["Switch"], true, callback);
+            gameCreate("Animal Crossing: New Horizons", ["N/A"], ["Switch"], false, callback);
         },
         function (callback) {
             gameCreate("Arena of Valor", ["Europe", "Asia", "North America"], ["Switch", "IOS", "Andriod"], false, callback);
@@ -116,7 +113,7 @@ function createGames(cb) {
             gameCreate("Portal 2", ["N/A"], ["PC"], false, callback);
         },
         function (callback) {
-            gameCreate("PUBG", ["NA", "SA", "EU", "JP", "KR", "SEA"], ["PC", "PS4", "Xbox"], false, callback);
+            gameCreate("PUBG", ["NA", "SA", "EU", "JP", "KR", "SEA"], ["PC", "PS4", "Xbox"], true, callback);
         },
         function (callback) {
             gameCreate("Rainbow Six", ["US", "Brazil", "EU", "Asia", "Australia", "Japan"], ["PC", "PS4", "Xbox"], false, callback);
@@ -139,6 +136,7 @@ function createGames(cb) {
 
     ], cb);
 }
+
 
 async.series([createGames,], function (err, res) {
     if(err) {

@@ -1,6 +1,7 @@
 "use strict";
 
 const postModel = require("../models/post");
+const gameModel = require("../models/game")
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -120,7 +121,8 @@ const remove = async  (req, res) => {
     }
 }
 
-const list = async (req, res) => {
+// list all posts of a given game
+const listByGame = async (req, res) => {
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
             error: "Bad Request",
@@ -128,8 +130,34 @@ const list = async (req, res) => {
         });
     }
     try {
-    let posts = await postModel.find({gameId: req.params.gameId}).exec();
-    return res.status(200).json(posts);
+        let game = await gameModel.findById(req.body.gameId).exec();
+        let posts = await postModel.find({gameId: req.body.gameId}).exec();
+        const response = {
+            name: game.name,
+            servers: game.allServers,
+            platforms: game.allPlatforms,
+            posts: posts,
+        }
+        return res.status(200).json(response);
+    } catch (err) {
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
+
+// list all posts of a gaming companion
+const listByCompanion = async (req, res) => {
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+    try {
+        let posts = await postModel.find({companionId: req.body.companionId}).exec();
+        return res.status(200).json(posts);
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -139,10 +167,12 @@ const list = async (req, res) => {
     }
 };
 
+
 module.exports = {
     create,
     read,
     updateStatus,
     remove,
-    list,
+    listByGame,
+    listByCompanion,
 };
