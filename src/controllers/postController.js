@@ -51,8 +51,10 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get post with id from database
-        let post = await PostModel.findById(req.params.id).exec();
+        console.log(req.params.id)
+        let post = await postModel.findById(req.params.id).exec();
         // if no post with id is found, return 404
+        console.log(post)
         if (!post)
             return res.status(404).json({
                 error: "Not Found",
