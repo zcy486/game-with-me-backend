@@ -1,6 +1,7 @@
 "use strict";
 
 const mongoose = require("mongoose");
+const mongoose_fuzzy_searching = require("mongoose-fuzzy-searching");
 
 const UserSchema = new mongoose.Schema({
     username: {
@@ -33,5 +34,5 @@ const UserSchema = new mongoose.Schema({
 });
 
 UserSchema.set("versionKey", false);
-
+UserSchema.plugin(mongoose_fuzzy_searching, {fields: ['username']});
 module.exports = mongoose.model("User", UserSchema);
