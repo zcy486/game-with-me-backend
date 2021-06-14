@@ -1,6 +1,8 @@
 "use strict";
 
 const mongoose = require("mongoose");
+const mongoose_fuzzy_searching = require("mongoose-fuzzy-searching");
+
 // Define schema for posts
 const GameSchema = new mongoose.Schema({
     name: {
@@ -21,4 +23,5 @@ const GameSchema = new mongoose.Schema({
     }
 });
 
+GameSchema.plugin(mongoose_fuzzy_searching, {fields: ['name']});
 module.exports = mongoose.model("Game", GameSchema);
