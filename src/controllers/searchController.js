@@ -2,7 +2,6 @@
 
 const Game = require("../models/game");
 const User = require("../models/user");
-const { matchArray } = require('compare-string');
 
 const search = async (req, res) => {
     // check if the body of the request contains all necessary properties
