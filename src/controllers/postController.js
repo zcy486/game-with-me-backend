@@ -1,7 +1,8 @@
 "use strict";
 
 const postModel = require("../models/post");
-const gameModel = require("../models/game")
+const gameModel = require("../models/game");
+const UserModel = require("../models/user");
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -51,15 +52,28 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get post with id from database
-        let post = await PostModel.findById(req.params.id).exec();
+        console.log(req.params.id)
+        let post = await postModel.findById(req.params.id).exec();
         // if no post with id is found, return 404
-        if (!post)
+        if (!post) {
             return res.status(404).json({
                 error: "Not Found",
                 message: `order not found`,
             });
+        }
+
+        let companion = await UserModel.findById(post.companionId);
+        let game = await gameModel.findById(post.gameId);
+        let fullPost = {
+            ...post.toObject(),
+            gameName: game.name,
+            companionName: companion.username,
+            companionAge: companion.age,
+            //TODO add more here...
+        }
         // return gotten post
-        return res.status(200).json(post);
+        console.log(res);
+        return res.status(200).json(fullPost);
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -132,11 +146,19 @@ const listByGame = async (req, res) => {
     try {
         let game = await gameModel.findById(req.body.gameId).exec();
         let posts = await postModel.find({gameId: req.body.gameId}).exec();
+
+        //TODO: to be optimized
+        let new_posts = [];
+        for (const post of posts) {
+            const companion_id = post.companionId;
+            let companion = await UserModel.findById(companion_id);
+            new_posts.push({...post.toObject(), companionName: companion.username});
+        }
         const response = {
             name: game.name,
             servers: game.allServers,
             platforms: game.allPlatforms,
-            posts: posts,
+            posts: new_posts,
         }
         return res.status(200).json(response);
     } catch (err) {
@@ -166,6 +188,8 @@ const listByCompanion = async (req, res) => {
         });
     }
 };
+
+//helper functions
 
 
 module.exports = {
