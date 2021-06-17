@@ -6,16 +6,22 @@ const User = require("./user");
 const CompanionSchema = new mongoose.Schema({
     ratings: {
         type: Number,
-        min: 1,
+        min: 0,
         max: 5,
+        required: true,
+        default: 0,
     },
     orderNumber: {
         type: Number,
         min: 0,
+        required: true,
+        default: 0,
     },
     reviewNumber: {
         type: Number,
         min: 0,
+        required: true,
+        default: 0,
     },
 });
 
