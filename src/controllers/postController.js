@@ -26,7 +26,7 @@ const create = async (req, res) => {
 
             servers: req.body.servers,
 
-            platform: req.body.platform,
+            platforms: req.body.platforms,
 
             screenshots: req.body.screenshots,
 
