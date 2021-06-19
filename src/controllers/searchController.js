@@ -3,6 +3,10 @@
 const Game = require("../models/game");
 const User = require("../models/user");
 
+function escapeRegex(text) {
+    return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
+}
+
 const search = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
@@ -16,7 +20,10 @@ const search = async (req, res) => {
         let input = req.body.userInput;
         console.log("input: <"+input+">");
 
-        let matched_games = await Game.fuzzySearch(input);
+        let matched_games = await Game.find(
+            {name: {$regex: escapeRegex(input), $options: 'i'}},
+        ).limit(10);
+
         let games = matched_games.map((game) => {
             return {
                 id: game._id.toString(),
@@ -25,7 +32,19 @@ const search = async (req, res) => {
             }
         });
 
-        let matched_users = await User.fuzzySearch(input);
+        let matched_users = await User.find(
+            {$text: {$search: input}},
+            {score: {$meta: "textScore"}}
+        ).sort(
+            {score: {$meta: "textScore"}}
+        ).limit(10);
+
+        /* alternative way to match users, powerful but inefficient
+        let matched_users = await User.find(
+            {username: {$regex: escapeRegex(input), $options: 'i'}},
+        ).limit(10);
+         */
+
         let users = matched_users.map((user) => {
             return {
                 id: user._id.toString(),
