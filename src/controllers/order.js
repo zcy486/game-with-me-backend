@@ -18,9 +18,9 @@ const create = async (req, res) => {
     
             orderStatus: "Created",
             
-            gamerId: req.body.gamerId,
+            postId: req.body.postId,
     
-            companionId: req.body.companionId,
+            gamerId: req.body.gamerId,
         }
 
         let order = await OrderModel.create(newOrder);
