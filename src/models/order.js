@@ -21,6 +21,10 @@ const OrderSchema = new mongoose.Schema(
 
         },
 
+        //TODO: to be updated
+        companionId: { type: mongoose.Schema.Types.ObjectId, ref: "Companion"},
+
+
         //store the id of the gamer
         gamerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" , required: true},
 
