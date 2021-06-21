@@ -52,7 +52,6 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get post with id from database
-        console.log(req.params.id)
         let post = await postModel.findById(req.params.id).exec();
         // if no post with id is found, return 404
         if (!post) {
@@ -72,7 +71,6 @@ const read = async (req, res) => {
             //TODO add more here...
         }
         // return gotten post
-        console.log(res);
         return res.status(200).json(fullPost);
     } catch (err) {
         console.log(err);
@@ -178,8 +176,25 @@ const listByCompanion = async (req, res) => {
         });
     }
     try {
-        let posts = await postModel.find({companionId: req.body.companionId}).exec();
-        return res.status(200).json(posts);
+        //TODO: to be optimized + change user to companion
+        let companion = await UserModel.findById(req.body.companionId);
+        let posts = await postModel.find({companionId: req.body.companionId});
+        let ret_posts = [];
+        for (const post of posts) {
+            const game_id = post.gameId;
+            let game = await gameModel.findById(game_id);
+            ret_posts.push({...post.toObject(), gameName: game.name});
+        }
+
+        const response = {
+            username: companion.username,
+            age: companion.age,
+            gender: companion.gender,
+            //TODO add companion fields
+
+            posts: ret_posts
+        }
+        return res.status(200).json(response);
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -188,9 +203,6 @@ const listByCompanion = async (req, res) => {
         });
     }
 };
-
-//helper functions
-
 
 module.exports = {
     create,

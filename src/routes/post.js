@@ -17,6 +17,11 @@ router.post(
     postController.listByGame
 );
 
+router.post(
+    "/ofcompanion",
+    postController.listByCompanion
+);
+
 router.put(
     "/:id",
     middlewares.checkAuthentication,
