@@ -49,7 +49,7 @@ const search = async (req, res) => {
             return {
                 id: user._id.toString(),
                 name: user.username,
-                group: "Users",
+                group: "Companions",
             }
         });
         let results = games.concat(users);
