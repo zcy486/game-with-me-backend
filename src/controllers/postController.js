@@ -133,8 +133,8 @@ const remove = async  (req, res) => {
     }
 }
 
-// list all posts of a given game
-const listByGame = async (req, res) => {
+//TODO list all posts of a given game with filters
+const listWithFilters = async (req, res) => {
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
             error: "Bad Request",
@@ -143,7 +143,57 @@ const listByGame = async (req, res) => {
     }
     try {
         let game = await gameModel.findById(req.body.gameId).exec();
-        let posts = await postModel.find({gameId: req.body.gameId}).exec();
+        console.log(game.name)
+        var filters = {};
+        console.log(req.body)
+        Object.keys(req.body).forEach((key) => {
+            if(req.body[key] !== "") {
+                switch (key) {
+                    case "price":
+                        switch (req.body[key]) {
+                            case "0-5":
+                                filters[key] = {$gte: 0, $lte: 5}
+                                break;
+                            case "6-10":
+                                filters[key] = {$gte: 6, $lte: 10}
+                                break;
+                            case "11-20":
+                                filters[key] = {$gte: 11, $lte: 20}
+                                break;
+                            case "20+":
+                                filters[key] = {$gte: 20}
+                                break;
+                            default:
+                        }
+                        break;
+                    case "postType":
+                        switch (req.body[key]) {
+                            case "Carry":
+                                filters[key] = {$in: ["Carry", "All Types"]}
+                                break;
+                            case "Chill":
+                                filters[key] = {$in: ["Chill", "All Types"]}
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case "servers":
+                        filters[key] = {$all: [req.body[key]]};
+                        break;
+                    case "platforms":
+                        filters[key] = {$all: [req.body[key]]};
+                        break;
+                    default:
+                        filters[key] = req.body[key];
+                        break;
+                }
+            }
+        });
+
+        //TODO: Problem probably here
+        console.log(filters)
+        let posts = await postModel.find(filters).exec();
 
         //TODO: to be optimized
         let new_posts = [];
@@ -209,6 +259,6 @@ module.exports = {
     read,
     updateStatus,
     remove,
-    listByGame,
+    listWithFilters,
     listByCompanion,
 };
