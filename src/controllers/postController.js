@@ -3,6 +3,7 @@
 const postModel = require("../models/post");
 const gameModel = require("../models/game");
 const UserModel = require("../models/user");
+const mongoose = require('mongoose');
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -142,13 +143,14 @@ const listWithFilters = async (req, res) => {
         });
     }
     try {
-        let game = await gameModel.findById(req.body.gameId).exec();
-        console.log(game.name)
-        var filters = {};
-        console.log(req.body)
+        let filters = {};
+        let sortType = {};
         Object.keys(req.body).forEach((key) => {
             if(req.body[key] !== "") {
                 switch (key) {
+                    case "gameId":
+                        filters[key] = mongoose.Types.ObjectId(req.body[key])
+                        break;
                     case "price":
                         switch (req.body[key]) {
                             case "0-5":
@@ -184,6 +186,14 @@ const listWithFilters = async (req, res) => {
                     case "platforms":
                         filters[key] = {$all: [req.body[key]]};
                         break;
+                    case "sortBy":
+                        //TODO: Change to orders and ratings
+                        if (req.body[key] === "orders") {
+                            sortType = {"price": -1}
+                        } else {
+                            sortType = {"price": 1}
+                        }
+                        break;
                     default:
                         filters[key] = req.body[key];
                         break;
@@ -191,21 +201,24 @@ const listWithFilters = async (req, res) => {
             }
         });
 
-        //TODO: Problem probably here
-        console.log(filters)
-        let posts = await postModel.find(filters).exec();
+        console.log(filters);
+        //TODO change type of gameId (from String to ObjectId)
+        let posts = await postModel.aggregate([
+            {$match: filters},
+            {$lookup: {from: "User", localField: "_id", foreignField: "companionId", as: "companion"}},
+            {$sort: sortType},
+            {$limit: 20},
+            ]
+        );
 
         //TODO: to be optimized
         let new_posts = [];
         for (const post of posts) {
             const companion_id = post.companionId;
             let companion = await UserModel.findById(companion_id);
-            new_posts.push({...post.toObject(), companionName: companion.username});
+            new_posts.push({...post, companionName: companion.username});
         }
         const response = {
-            name: game.name,
-            servers: game.allServers,
-            platforms: game.allPlatforms,
             posts: new_posts,
         }
         return res.status(200).json(response);
