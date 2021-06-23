@@ -3,6 +3,7 @@
 const postModel = require("../models/post");
 const gameModel = require("../models/game");
 const UserModel = require("../models/user");
+const mongoose = require('mongoose');
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -26,7 +27,7 @@ const create = async (req, res) => {
 
             servers: req.body.servers,
 
-            platform: req.body.platform,
+            platforms: req.body.platforms,
 
             screenshots: req.body.screenshots,
 
@@ -133,8 +134,8 @@ const remove = async  (req, res) => {
     }
 }
 
-// list all posts of a given game
-const listByGame = async (req, res) => {
+//TODO list all posts of a given game with filters
+const listWithFilters = async (req, res) => {
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
             error: "Bad Request",
@@ -142,20 +143,82 @@ const listByGame = async (req, res) => {
         });
     }
     try {
-        let game = await gameModel.findById(req.body.gameId).exec();
-        let posts = await postModel.find({gameId: req.body.gameId}).exec();
+        let filters = {};
+        let sortType = {};
+        Object.keys(req.body).forEach((key) => {
+            if(req.body[key] !== "") {
+                switch (key) {
+                    case "gameId":
+                        filters[key] = mongoose.Types.ObjectId(req.body[key])
+                        break;
+                    case "price":
+                        switch (req.body[key]) {
+                            case "0-5":
+                                filters[key] = {$gte: 0, $lte: 5}
+                                break;
+                            case "6-10":
+                                filters[key] = {$gte: 6, $lte: 10}
+                                break;
+                            case "11-20":
+                                filters[key] = {$gte: 11, $lte: 20}
+                                break;
+                            case "20+":
+                                filters[key] = {$gte: 20}
+                                break;
+                            default:
+                        }
+                        break;
+                    case "postType":
+                        switch (req.body[key]) {
+                            case "Carry":
+                                filters[key] = {$in: ["Carry", "All Types"]}
+                                break;
+                            case "Chill":
+                                filters[key] = {$in: ["Chill", "All Types"]}
+                                break;
+                            default:
+                                break;
+                        }
+                        break;
+                    case "servers":
+                        filters[key] = {$all: [req.body[key]]};
+                        break;
+                    case "platforms":
+                        filters[key] = {$all: [req.body[key]]};
+                        break;
+                    case "sortBy":
+                        //TODO: Change to orders and ratings
+                        if (req.body[key] === "orders") {
+                            sortType = {"price": -1}
+                        } else {
+                            sortType = {"price": 1}
+                        }
+                        break;
+                    default:
+                        filters[key] = req.body[key];
+                        break;
+                }
+            }
+        });
+
+        console.log(filters);
+        //TODO change type of gameId (from String to ObjectId)
+        let posts = await postModel.aggregate([
+            {$match: filters},
+            {$lookup: {from: "User", localField: "_id", foreignField: "companionId", as: "companion"}},
+            {$sort: sortType},
+            {$limit: 20},
+            ]
+        );
 
         //TODO: to be optimized
         let new_posts = [];
         for (const post of posts) {
             const companion_id = post.companionId;
             let companion = await UserModel.findById(companion_id);
-            new_posts.push({...post.toObject(), companionName: companion.username});
+            new_posts.push({...post, companionName: companion.username});
         }
         const response = {
-            name: game.name,
-            servers: game.allServers,
-            platforms: game.allPlatforms,
             posts: new_posts,
         }
         return res.status(200).json(response);
@@ -209,6 +272,6 @@ module.exports = {
     read,
     updateStatus,
     remove,
-    listByGame,
+    listWithFilters,
     listByCompanion,
 };
