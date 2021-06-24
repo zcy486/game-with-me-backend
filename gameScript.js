@@ -1,21 +1,9 @@
-"use strict";
-
-const http       = require('http');
-const mongoose   = require('mongoose');
-
-const app        = require('./src/app');
-const config     = require('./src/config');
-
+const mongoose = require('mongoose');
 const async = require("async");
+
+const config = require('./src/config');
 const Game = require("./src/models/game");
 
-// Set the port to the API.
-app.set('port', config.port);
-
-//Create a http server based on Express
-const server = http.createServer(app);
-
-//Connect to the MongoDB database; then start the server
 mongoose
     .connect(config.mongoURI, {
         useNewUrlParser: true,
@@ -23,23 +11,11 @@ mongoose
         useFindAndModify: false,
         useCreateIndex: true
     })
-    .then(() => server.listen(config.port))
     .catch(err => {
         console.log('Error connecting to the database', err.message);
         process.exit(err.statusCode);
     });
 
-
-server.on('listening', () => {
-    console.log(`API is running in port ${config.port}`);
-});
-
-server.on('error', (err) => {
-    console.log('Error in the server', err.message);
-    process.exit(err.statusCode);
-});
-
-//TODO to be removed
 //The following part generates test data on games, posts and users.
 mongoose.Promise = global.Promise;
 
@@ -56,6 +32,9 @@ async function gameCreate(name, allServers, allPlatforms, isPopular, cb) {
             }
             cb(null, game);
         });
+    }
+    else {
+        cb(null, null);
     }
 }
 
@@ -151,4 +130,6 @@ async.series([createGames,], function (err, res) {
     else {
         console.log("All games are generated.");
     }
+    // All done, disconnect from database
+    mongoose.connection.close();
 });
