@@ -1,7 +1,7 @@
 "use strict";
 
-const postModel = require("../models/post");
-const gameModel = require("../models/game");
+const PostModel = require("../models/post");
+const GameModel = require("../models/game");
 const UserModel = require("../models/user");
 const CompanionModel = require("../models/companion");
 const mongoose = require('mongoose');
@@ -29,7 +29,7 @@ const create = async (req, res) => {
             gameId: req.body.gameId,
             companionId: req.body.companionId,
         }
-        let post = await postModel.create(newPost);
+        let post = await PostModel.create(newPost);
 
         // change role of user to companion
         const companion_id = req.body.companionId;
@@ -52,7 +52,7 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get post with id from database
-        let post = await postModel.findById(req.params.id).exec();
+        let post = await PostModel.findById(req.params.id).exec();
         // if no post with id is found, return 404
         if (!post) {
             return res.status(404).json({
@@ -61,14 +61,16 @@ const read = async (req, res) => {
             });
         }
 
-        let companion = await UserModel.findById(post.companionId);
-        let game = await gameModel.findById(post.gameId);
+        let companion = await CompanionModel.findById(post.companionId);
+        let game = await GameModel.findById(post.gameId);
         let fullPost = {
             ...post.toObject(),
             gameName: game.name,
             companionName: companion.username,
             companionAge: companion.age,
-            //TODO add companion fields
+            ratings: companion.ratings,
+            orderNumber: companion.orderNumber,
+            reviewNumber: companion.reviewNumber,
         }
         // return gotten post
         return res.status(200).json(fullPost);
@@ -93,7 +95,7 @@ const updateStatus = async (req, res) => {
     // handle the request
     try {
         // find and update post with id
-        let post = await postModel.findByIdAndUpdate(
+        let post = await PostModel.findByIdAndUpdate(
             req.params.id,
             {
                 price: req.body.price,
@@ -121,7 +123,7 @@ const updateStatus = async (req, res) => {
 
 const remove = async  (req, res) => {
     try {
-        await postModel.findByIdAndRemove(req.params.id).exec();
+        await PostModel.findByIdAndRemove(req.params.id).exec();
         return res
             .status(200)
             .json({message: `Post with id${req.params.id} was deleted`});
@@ -201,9 +203,9 @@ const listWithFilters = async (req, res) => {
             }
         });
 
-        console.log(filters);
-        //TODO change type of gameId (from String to ObjectId)
-        let posts = await postModel.aggregate([
+        //console.log(filters);
+
+        let posts = await PostModel.aggregate([
             {$match: filters},
             {$lookup: {from: "User", localField: "_id", foreignField: "companionId", as: "companion"}},
             {$sort: sortType},
@@ -212,11 +214,17 @@ const listWithFilters = async (req, res) => {
         );
 
         //TODO: to be optimized
+        //additional fields: companionName,ratings and reviewNumber
         let new_posts = [];
         for (const post of posts) {
             const companion_id = post.companionId;
-            let companion = await UserModel.findById(companion_id);
-            new_posts.push({...post, companionName: companion.username});
+            let companion = await CompanionModel.findById(companion_id);
+            new_posts.push({
+                ...post,
+                companionName: companion.username,
+                ratings: companion.ratings,
+                reviewNumber: companion.reviewNumber
+            });
         }
         const response = {
             posts: new_posts,
@@ -239,13 +247,15 @@ const listByCompanion = async (req, res) => {
         });
     }
     try {
-        //TODO: to be optimized + change user to companion
-        let companion = await UserModel.findById(req.body.companionId);
-        let posts = await postModel.find({companionId: req.body.companionId});
+        let companion = await CompanionModel.findById(req.body.companionId);
+        let posts = await PostModel.find({companionId: req.body.companionId});
+
+        //TODO: to be optimized
+        //additional fields: gameName
         let ret_posts = [];
         for (const post of posts) {
             const game_id = post.gameId;
-            let game = await gameModel.findById(game_id);
+            let game = await GameModel.findById(game_id);
             ret_posts.push({...post.toObject(), gameName: game.name});
         }
 
@@ -253,7 +263,9 @@ const listByCompanion = async (req, res) => {
             username: companion.username,
             age: companion.age,
             gender: companion.gender,
-            //TODO add companion fields
+            ratings: companion.ratings,
+            orderNumber: companion.orderNumber,
+            reviewNumber: companion.reviewNumber,
 
             posts: ret_posts
         }
