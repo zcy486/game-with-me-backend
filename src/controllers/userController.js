@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 
 const config = require("../config");
 const UserModel = require("../models/user");
+const CompanionModel = require("../models/companion");
 
 const login = async (req, res) => {
     //check if the body of the request contains all necessary properties
@@ -223,6 +224,27 @@ const updateBalance = async (req, res) => {
     }
 };
 
+const getCompanionProfile = async (req, res) => {
+    try {
+        let companion = await CompanionModel.findById(req.params.id);
+        if(!companion) {
+            res.status(200).send({});
+        }
+        else {
+            res.status(200).send({
+                ratings: companion.ratings,
+                reviewNumber: companion.reviewNumber,
+                orderNumber: companion.orderNumber
+            });
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
 
 module.exports = {
     login,
@@ -230,4 +252,5 @@ module.exports = {
     updateProfile,
     logout,
     updateBalance,
+    getCompanionProfile,
 };
