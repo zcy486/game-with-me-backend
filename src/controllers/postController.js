@@ -3,6 +3,7 @@
 const postModel = require("../models/post");
 const gameModel = require("../models/game");
 const UserModel = require("../models/user");
+const CompanionModel = require("../models/companion");
 const mongoose = require('mongoose');
 
 const create = async (req, res) => {
@@ -18,27 +19,25 @@ const create = async (req, res) => {
         // create post in database
         const newPost = {
             price: req.body.price,
-
             postType: req.body.postType,
-
             introduction: req.body.introduction,
-
             language: req.body.language,
-
             servers: req.body.servers,
-
             platforms: req.body.platforms,
-
             screenshots: req.body.screenshots,
-
             availableTime: req.body.availableTime,
-
             gameId: req.body.gameId,
-
             companionId: req.body.companionId,
         }
-
         let post = await postModel.create(newPost);
+
+        // change role of user to companion
+        const companion_id = req.body.companionId;
+        let exist = await CompanionModel.findById(companion_id);
+        if(!exist) {
+            await UserModel.findByIdAndUpdate(companion_id, {__t: "Companion"});
+        }
+
         // return created post
         return  res.status(200).json(post);
     } catch (err) {
@@ -69,7 +68,7 @@ const read = async (req, res) => {
             gameName: game.name,
             companionName: companion.username,
             companionAge: companion.age,
-            //TODO add more here...
+            //TODO add companion fields
         }
         // return gotten post
         return res.status(200).json(fullPost);
@@ -82,6 +81,7 @@ const read = async (req, res) => {
     }
 };
 
+//TODO not in use yet
 const updateStatus = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
@@ -101,7 +101,7 @@ const updateStatus = async (req, res) => {
                 introduction: req.body.introduction,
                 language: req.body.language,
                 servers: req.body.servers,
-                platform: req.body.platform,
+                platforms: req.body.platforms,
                 screenshots: req.body.screenshots,
                 availableTime: req.body.screenshots,
             },
