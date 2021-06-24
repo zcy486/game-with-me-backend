@@ -191,9 +191,9 @@ const listWithFilters = async (req, res) => {
                     case "sortBy":
                         //TODO: Change to orders and ratings
                         if (req.body[key] === "orders") {
-                            sortType = {"price": -1}
+                            sortType = {"companion.orderNumber": -1}
                         } else {
-                            sortType = {"price": 1}
+                            sortType = {"companion.ratings": -1}
                         }
                         break;
                     default:
@@ -207,7 +207,7 @@ const listWithFilters = async (req, res) => {
 
         let posts = await PostModel.aggregate([
             {$match: filters},
-            {$lookup: {from: "User", localField: "_id", foreignField: "companionId", as: "companion"}},
+            {$lookup: {from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion"}},
             {$sort: sortType},
             {$limit: 20},
             ]
