@@ -11,4 +11,6 @@ router.post("/register", userController.register);
 router.put("/:id", middlewares.checkAuthentication, userController.updateProfile);
 router.get("/logout", middlewares.checkAuthentication, userController.logout);
 router.put("/balance/:id", middlewares.checkAuthentication, userController.updateBalance);
+router.get("/companion/:id", middlewares.checkAuthentication, userController.getCompanionProfile);
+
 module.exports = router;

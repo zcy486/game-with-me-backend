@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "start": "node ./index.js",
-    "devstart": "nodemon ./index.js"
+    "devstart": "nodemon ./index.js",
+    "gameGenerator": "node ./gameScript.js"
   },
   "dependencies": {
     "async": "^3.2.0",
