@@ -126,10 +126,35 @@ const list = async (req, res) => {
     }
 };
 
+//read order lists by user's ID
+const readByUserId = async (req, res) => {
+    try {
+        // get order with id from database
+        let order = await OrderModel.find({gamerId: req.params.id}).exec();
+
+        // if no order with id is found, return 404
+        if (!order)
+            return res.status(404).json({
+                error: "Not Found",
+                message: `order not found`,
+            });
+
+        // return gotten order
+        return res.status(200).json(order);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            message: err.message,
+        });
+    }
+};
+
 module.exports = {
     create,
     read,
     updateStatus,
     remove,
     list,
+    readByUserId,
 };

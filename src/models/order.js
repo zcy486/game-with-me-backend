@@ -45,6 +45,13 @@ const OrderSchema = new mongoose.Schema(
 
         //images to be added 
         thumbnail: String,
+
+        //zy..date, gameId, amount of games?
+      /*   gameId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Game",
+            required: true,
+        }, */
         
       
     },
