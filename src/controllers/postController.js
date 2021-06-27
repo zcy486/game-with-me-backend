@@ -147,6 +147,7 @@ const listWithFilters = async (req, res) => {
     try {
         let filters = {};
         let sortType = {};
+        let skipDocument = 1;
         Object.keys(req.body).forEach((key) => {
             if(req.body[key] !== "") {
                 switch (key) {
@@ -196,6 +197,9 @@ const listWithFilters = async (req, res) => {
                             sortType = {"companion.ratings": -1}
                         }
                         break;
+                    case "page":
+                        skipDocument = (req.body[key] - 1) * 20
+                        break;
                     default:
                         filters[key] = req.body[key];
                         break;
@@ -203,19 +207,22 @@ const listWithFilters = async (req, res) => {
             }
         });
 
-        //console.log(filters);
-
-        let posts = await PostModel.aggregate([
+        let result = await PostModel.aggregate([
             {$match: filters},
             {$lookup: {from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion"}},
             {$sort: sortType},
-            {$limit: 20},
-            ]
-        );
+            {$facet: {
+                "stage1" : [{"$group": {_id:null, count:{$sum:1}}}],
+                    "stage2" : [ { "$skip": skipDocument}, {"$limit": 20} ],
+            }},
+            {$unwind: "$stage1"},
+        ]);
 
         //TODO: to be optimized
         //additional fields: companionName,ratings and reviewNumber
+        let response = {};
         let new_posts = [];
+        const posts = result[0] ? result[0].stage2 : [];
         for (const post of posts) {
             const companion_id = post.companionId;
             let companion = await CompanionModel.findById(companion_id);
@@ -226,11 +233,13 @@ const listWithFilters = async (req, res) => {
                 reviewNumber: companion.reviewNumber
             });
         }
-        const response = {
+        response = {
+            count: result[0] ? result[0].stage1.count : 0,
             posts: new_posts,
         }
         return res.status(200).json(response);
     } catch (err) {
+        console.log(err)
         return res.status(500).json({
             error: "Internal server error",
             message: err.message,
