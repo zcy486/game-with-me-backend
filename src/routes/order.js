@@ -21,6 +21,8 @@ router.put(
 
 router.get("/:id", OrderController.read); // Read a order by Id
 
+router.get("/gamerId/:id", OrderController.readByUserId); //Read order list by gamerId.
+
 router.delete(
     "/:id",
     middlewares.checkAuthentication,
