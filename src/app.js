@@ -5,6 +5,7 @@ const bodyParser = require('body-parser');
 const helmet     = require('helmet');
 const middlewares = require('./middlewares');
 
+
 const userRouter = require('./routes/userRouter');
 const order = require('./routes/order');
 const postRouter = require('./routes/post')
@@ -19,6 +20,7 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(middlewares.allowCrossDomain);
 
+app.use("./uploadImages", express.static("./uploadImages"));
 // Basic route
 app.get('/', (req, res) => {
     res.json({

@@ -6,6 +6,7 @@ const bcrypt = require("bcryptjs");
 const config = require("../config");
 const UserModel = require("../models/user");
 
+
 const login = async (req, res) => {
     //check if the body of the request contains all necessary properties
     if (!Object.prototype.hasOwnProperty.call(req.body, "password")) {
@@ -47,6 +48,8 @@ const login = async (req, res) => {
             gender: user.gender,
             isPremium: user.isPremium,
             balance: user.balance,
+            avatarUrl: user.avatarUrl,
+            
         }, config.JwtSecret, {
             expiresIn: 86400, //24hrs
         });
@@ -97,7 +100,8 @@ const register = async (req, res) => {
             age: user.age,
             gender: user.gender,
             isPremium: user.isPremium,
-            balance: user.balance
+            balance: user.balance,
+            avatarUrl: user.avatarUrl,
         }, config.JwtSecret, {
             expiresIn: 86400 //24hrs
         });
@@ -153,6 +157,7 @@ const updateProfile = async (req, res) => {
             gender: user.gender,
             isPremium: user.isPremium,
             balance: user.balance,
+            avatarUrl: user.avatarUrl,
         }, config.JwtSecret, {
             expiresIn: 86400, //24hrs
         });
@@ -204,6 +209,7 @@ const updateBalance = async (req, res) => {
             gender: user.gender,
             isPremium: user.isPremium,
             balance: user.balance,
+            avatarUrl: user.avatarUrl,
         }, config.JwtSecret, {
             expiresIn: 86400, //24hrs
         });
@@ -224,10 +230,59 @@ const updateBalance = async (req, res) => {
 };
 
 
+const uploadImages = async (req, res) => {
+    // check if the body of the request contains all necessary properties
+
+    // handle the request
+
+    const url = req.protocol + '://' + req.get('host') + "/uploadImages/"
+
+    try {
+        // find and update avatarUrl with id
+        let user = await UserModel.findByIdAndUpdate(
+            req.params.id, 
+            {avatarUrl: (url + req.file.filename)},
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).exec();
+
+        const token = jwt.sign({
+            _id: user._id,
+            username: user.username,
+            age: user.age,
+            gender: user.gender,
+            isPremium: user.isPremium,
+            balance: user.balance,
+            avatarUrl: user.avatarUrl,
+        }, config.JwtSecret, {
+            expiresIn: 86400, //24hrs
+        });
+
+        // return updated user
+        return res.status(200).json({
+            token: token,
+        });
+
+
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+
+}
+
+
+
 module.exports = {
     login,
     register,
     updateProfile,
     logout,
     updateBalance,
+    uploadImages,
 };
