@@ -71,6 +71,7 @@ const read = async (req, res) => {
             ratings: companion.ratings,
             orderNumber: companion.orderNumber,
             reviewNumber: companion.reviewNumber,
+            avatarUrl: companion.avatarUrl,
         }
         // return gotten post
         return res.status(200).json(fullPost);
@@ -230,7 +231,8 @@ const listWithFilters = async (req, res) => {
                 ...post,
                 companionName: companion.username,
                 ratings: companion.ratings,
-                reviewNumber: companion.reviewNumber
+                reviewNumber: companion.reviewNumber,
+                avatarUrl: companion.avatarUrl
             });
         }
         response = {
@@ -275,6 +277,7 @@ const listByCompanion = async (req, res) => {
             ratings: companion.ratings,
             orderNumber: companion.orderNumber,
             reviewNumber: companion.reviewNumber,
+            avatarUrl: companion.avatarUrl,
 
             posts: ret_posts
         }
