@@ -1,7 +1,7 @@
 "use strict"
 
 const Game = require("../models/game");
-const User = require("../models/user");
+const Companion = require("../models/companion");
 
 function escapeRegex(text) {
     return text.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, "\\$&");
@@ -18,7 +18,7 @@ const search = async (req, res) => {
 
     try {
         let input = req.body.userInput;
-        console.log("input: <"+input+">");
+        //console.log("input: <"+input+">");
 
         let matched_games = await Game.find(
             {name: {$regex: escapeRegex(input), $options: 'i'}},
@@ -32,7 +32,7 @@ const search = async (req, res) => {
             }
         });
 
-        let matched_users = await User.find(
+        let matched_companions = await Companion.find(
             {$text: {$search: input}},
             {score: {$meta: "textScore"}}
         ).sort(
@@ -40,21 +40,21 @@ const search = async (req, res) => {
         ).limit(10);
 
         /* alternative way to match users, powerful but inefficient
-        let matched_users = await User.find(
+        let matched_companions = await Companion.find(
             {username: {$regex: escapeRegex(input), $options: 'i'}},
         ).limit(10);
          */
 
-        let users = matched_users.map((user) => {
+        let companions = matched_companions.map((user) => {
             return {
                 id: user._id.toString(),
                 name: user.username,
                 group: "Companions",
             }
         });
-        let results = games.concat(users);
-        console.log("results:");
-        console.log(results);
+        let results = games.concat(companions);
+        //console.log("results:");
+        //console.log(results);
 
         return res.status(200).json(results);
     } catch (err) {

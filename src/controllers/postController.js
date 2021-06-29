@@ -1,8 +1,9 @@
 "use strict";
 
-const postModel = require("../models/post");
-const gameModel = require("../models/game");
+const PostModel = require("../models/post");
+const GameModel = require("../models/game");
 const UserModel = require("../models/user");
+const CompanionModel = require("../models/companion");
 const mongoose = require('mongoose');
 
 const create = async (req, res) => {
@@ -18,27 +19,25 @@ const create = async (req, res) => {
         // create post in database
         const newPost = {
             price: req.body.price,
-
             postType: req.body.postType,
-
             introduction: req.body.introduction,
-
             language: req.body.language,
-
             servers: req.body.servers,
-
             platforms: req.body.platforms,
-
             screenshots: req.body.screenshots,
-
             availableTime: req.body.availableTime,
-
             gameId: req.body.gameId,
-
             companionId: req.body.companionId,
         }
+        let post = await PostModel.create(newPost);
 
-        let post = await postModel.create(newPost);
+        // change role of user to companion
+        const companion_id = req.body.companionId;
+        let exist = await CompanionModel.findById(companion_id);
+        if(!exist) {
+            await UserModel.findByIdAndUpdate(companion_id, {__t: "Companion"});
+        }
+
         // return created post
         return  res.status(200).json(post);
     } catch (err) {
@@ -53,7 +52,7 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get post with id from database
-        let post = await postModel.findById(req.params.id).exec();
+        let post = await PostModel.findById(req.params.id).exec();
         // if no post with id is found, return 404
         if (!post) {
             return res.status(404).json({
@@ -62,14 +61,16 @@ const read = async (req, res) => {
             });
         }
 
-        let companion = await UserModel.findById(post.companionId);
-        let game = await gameModel.findById(post.gameId);
+        let companion = await CompanionModel.findById(post.companionId);
+        let game = await GameModel.findById(post.gameId);
         let fullPost = {
             ...post.toObject(),
             gameName: game.name,
             companionName: companion.username,
             companionAge: companion.age,
-            //TODO add more here...
+            ratings: companion.ratings,
+            orderNumber: companion.orderNumber,
+            reviewNumber: companion.reviewNumber,
         }
         // return gotten post
         return res.status(200).json(fullPost);
@@ -82,6 +83,7 @@ const read = async (req, res) => {
     }
 };
 
+//TODO not in use yet
 const updateStatus = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
@@ -93,7 +95,7 @@ const updateStatus = async (req, res) => {
     // handle the request
     try {
         // find and update post with id
-        let post = await postModel.findByIdAndUpdate(
+        let post = await PostModel.findByIdAndUpdate(
             req.params.id,
             {
                 price: req.body.price,
@@ -101,7 +103,7 @@ const updateStatus = async (req, res) => {
                 introduction: req.body.introduction,
                 language: req.body.language,
                 servers: req.body.servers,
-                platform: req.body.platform,
+                platforms: req.body.platforms,
                 screenshots: req.body.screenshots,
                 availableTime: req.body.screenshots,
             },
@@ -121,7 +123,7 @@ const updateStatus = async (req, res) => {
 
 const remove = async  (req, res) => {
     try {
-        await postModel.findByIdAndRemove(req.params.id).exec();
+        await PostModel.findByIdAndRemove(req.params.id).exec();
         return res
             .status(200)
             .json({message: `Post with id${req.params.id} was deleted`});
@@ -145,6 +147,7 @@ const listWithFilters = async (req, res) => {
     try {
         let filters = {};
         let sortType = {};
+        let skipDocument = 1;
         Object.keys(req.body).forEach((key) => {
             if(req.body[key] !== "") {
                 switch (key) {
@@ -189,10 +192,13 @@ const listWithFilters = async (req, res) => {
                     case "sortBy":
                         //TODO: Change to orders and ratings
                         if (req.body[key] === "orders") {
-                            sortType = {"price": -1}
+                            sortType = {"companion.orderNumber": -1}
                         } else {
-                            sortType = {"price": 1}
+                            sortType = {"companion.ratings": -1}
                         }
+                        break;
+                    case "page":
+                        skipDocument = (req.body[key] - 1) * 20
                         break;
                     default:
                         filters[key] = req.body[key];
@@ -201,28 +207,39 @@ const listWithFilters = async (req, res) => {
             }
         });
 
-        console.log(filters);
-        //TODO change type of gameId (from String to ObjectId)
-        let posts = await postModel.aggregate([
+        let result = await PostModel.aggregate([
             {$match: filters},
-            {$lookup: {from: "User", localField: "_id", foreignField: "companionId", as: "companion"}},
+            {$lookup: {from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion"}},
             {$sort: sortType},
-            {$limit: 20},
-            ]
-        );
+            {$facet: {
+                "stage1" : [{"$group": {_id:null, count:{$sum:1}}}],
+                    "stage2" : [ { "$skip": skipDocument}, {"$limit": 20} ],
+            }},
+            {$unwind: "$stage1"},
+        ]);
 
         //TODO: to be optimized
+        //additional fields: companionName,ratings and reviewNumber
+        let response = {};
         let new_posts = [];
+        const posts = result[0] ? result[0].stage2 : [];
         for (const post of posts) {
             const companion_id = post.companionId;
-            let companion = await UserModel.findById(companion_id);
-            new_posts.push({...post, companionName: companion.username});
+            let companion = await CompanionModel.findById(companion_id);
+            new_posts.push({
+                ...post,
+                companionName: companion.username,
+                ratings: companion.ratings,
+                reviewNumber: companion.reviewNumber
+            });
         }
-        const response = {
+        response = {
+            count: result[0] ? result[0].stage1.count : 0,
             posts: new_posts,
         }
         return res.status(200).json(response);
     } catch (err) {
+        console.log(err)
         return res.status(500).json({
             error: "Internal server error",
             message: err.message,
@@ -239,13 +256,15 @@ const listByCompanion = async (req, res) => {
         });
     }
     try {
-        //TODO: to be optimized + change user to companion
-        let companion = await UserModel.findById(req.body.companionId);
-        let posts = await postModel.find({companionId: req.body.companionId});
+        let companion = await CompanionModel.findById(req.body.companionId);
+        let posts = await PostModel.find({companionId: req.body.companionId});
+
+        //TODO: to be optimized
+        //additional fields: gameName
         let ret_posts = [];
         for (const post of posts) {
             const game_id = post.gameId;
-            let game = await gameModel.findById(game_id);
+            let game = await GameModel.findById(game_id);
             ret_posts.push({...post.toObject(), gameName: game.name});
         }
 
@@ -253,7 +272,9 @@ const listByCompanion = async (req, res) => {
             username: companion.username,
             age: companion.age,
             gender: companion.gender,
-            //TODO add companion fields
+            ratings: companion.ratings,
+            orderNumber: companion.orderNumber,
+            reviewNumber: companion.reviewNumber,
 
             posts: ret_posts
         }

@@ -4,7 +4,8 @@ const express    = require('express');
 const bodyParser = require('body-parser');
 const helmet     = require('helmet');
 const middlewares = require('./middlewares');
-
+const cors = require("cors");
+const path = require("path");
 const userRouter = require('./routes/userRouter');
 const order = require('./routes/order');
 const postRouter = require('./routes/post')
@@ -18,6 +19,11 @@ app.use(helmet());
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(middlewares.allowCrossDomain);
+app.use(cors());
+
+
+
+app.use("/uploadImages", express.static(path.join(process.cwd(), 'uploadImages')));
 
 // Basic route
 app.get('/', (req, res) => {

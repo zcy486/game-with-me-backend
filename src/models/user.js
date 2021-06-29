@@ -37,7 +37,12 @@ const UserSchema = new mongoose.Schema({
         required: true,
         //TODO: to be 0 
         default: 20,
-    }
+    },
+
+    avatarUrl: {
+        type: String,
+    },
+    
 });
 
 UserSchema.set("versionKey", false);
