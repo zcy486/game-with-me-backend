@@ -28,4 +28,5 @@ router.put("/:id", middlewares.checkAuthentication, userController.updateProfile
 router.get("/logout", middlewares.checkAuthentication, userController.logout);
 router.put("/balance/:id", middlewares.checkAuthentication, userController.updateBalance);
 router.post("/image/:id", middlewares.checkAuthentication, upload.single("image"), userController.uploadImages);
+router.delete("/image/:id", middlewares.checkAuthentication, userController.deleteImages);
 module.exports = router;
