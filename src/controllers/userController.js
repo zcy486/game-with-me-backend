@@ -236,7 +236,7 @@ const uploadImages = async (req, res) => {
     // handle the request
 
     const url = req.protocol + '://' + req.get('host') + "/uploadImages/"
-
+  //  const type = req.file.originalname.toLowerCase().split('.').pop();
     try {
         // find and update avatarUrl with id
         let user = await UserModel.findByIdAndUpdate(
