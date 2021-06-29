@@ -13,8 +13,8 @@ router.post(
 );
 
 router.post(
-    "/ofgame",
-    postController.listByGame
+    "/filters",
+    postController.listWithFilters
 );
 
 router.post(

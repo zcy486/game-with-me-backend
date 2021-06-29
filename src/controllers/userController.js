@@ -5,6 +5,7 @@ const bcrypt = require("bcryptjs");
 
 const config = require("../config");
 const UserModel = require("../models/user");
+const CompanionModel = require("../models/companion");
 
 //filesystem needed for images
 const fs = require('fs');
@@ -233,6 +234,27 @@ const updateBalance = async (req, res) => {
     }
 };
 
+const getCompanionProfile = async (req, res) => {
+    try {
+        let companion = await CompanionModel.findById(req.params.id);
+        if(!companion) {
+            res.status(200).send({});
+        }
+        else {
+            res.status(200).send({
+                ratings: companion.ratings,
+                reviewNumber: companion.reviewNumber,
+                orderNumber: companion.orderNumber
+            });
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
 
 const uploadImages = async (req, res) => {
 
@@ -359,4 +381,5 @@ module.exports = {
     updateBalance,
     uploadImages,
     deleteImages,
+    getCompanionProfile,
 };

@@ -46,8 +46,34 @@ const getIdByName = async (req, res) => {
     }
 }
 
+const getGameInfoById = async (req, res) => {
+    try {
+        // get game with id from database
+        let game = await gameModel.findById(req.params.id);
+        // if no game with id is found, return 404
+        if (!game) {
+            return res.status(404).json({
+                error: "Not Found",
+                message: `order not found`,
+            });
+        }
+        let response = {
+            name: game.name,
+            allServers: game.allServers,
+            allPlatforms: game.allPlatforms,
+        };
+        return res.status(200).json(response);
+    } catch (err) {
+        return res.status(500).json({
+            error: 'Internal Server Error',
+            message: err.message
+        });
+    }
+}
+
 
 module.exports = {
     list,
     getIdByName,
+    getGameInfoById,
 };
