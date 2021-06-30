@@ -39,6 +39,53 @@ server.on('error', (err) => {
     process.exit(err.statusCode);
 });
 
+// start the chat server here
+const io = require("socket.io")(server, {
+    cors: {
+        origin: "http://localhost:3000",
+    },
+});
+
+io.use((socket, next) => {
+    const username = socket.handshake.auth.username;
+    if (!username) {
+        return next(new Error("invalid username"));
+    }
+    socket.username = username;
+    next();
+});
+
+io.on("connection", (socket) => {
+    const users = [];
+    for (let [id, socket] of io.of("/").sockets) {
+        users.push({
+            userID: id,
+            username: socket.username,
+        });
+    }
+    //console.log("users:", users);
+    socket.emit("users", users);
+
+    // notify existing users
+    socket.broadcast.emit("user connected", {
+        userID: socket.id,
+        username: socket.username,
+    });
+
+    // forward the private message to the right recipient
+    socket.on("private message", ({ content, to }) => {
+        socket.to(to).emit("private message", {
+            content,
+            from: socket.id,
+        });
+    });
+
+    // notify users upon disconnection
+    socket.on("disconnect", () => {
+        socket.broadcast.emit("user disconnected", socket.id);
+    });
+});
+
 //TODO to be removed
 //The following part generates test data on games, posts and users.
 mongoose.Promise = global.Promise;
