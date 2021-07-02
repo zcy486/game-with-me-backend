@@ -40,7 +40,7 @@ server.on('error', (err) => {
 });
 
 //============CHAT===============
-// chat server relevant from here
+// chat server relevant start from here
 const io = require("socket.io")(server, {
     cors: {
         origin: "http://localhost:3000",
@@ -49,8 +49,12 @@ const io = require("socket.io")(server, {
 
 const crypto = require("crypto");
 const randomId = () => crypto.randomBytes(8).toString("hex");
+
 const { InMemorySessionStore } = require("./chatStuff/sessionStore");
 const sessionStore = new InMemorySessionStore();
+
+const { InMemoryMessageStore } = require("./chatStuff/messageStore");
+const messageStore = new InMemoryMessageStore();
 
 // chat middlewares
 io.use((socket, next) => {
@@ -97,11 +101,23 @@ io.on("connection", (socket) => {
 
     // fetch existing users
     const users = [];
+    // we shouldn’t lose messages from other users upon disconnection
+    const messagesPerUser = new Map();
+    messageStore.findMessagesForUser(socket.userID).forEach((message) => {
+        const { from, to } = message;
+        const otherUser = socket.userID === from ? to : from;
+        if (messagesPerUser.has(otherUser)) {
+            messagesPerUser.get(otherUser).push(message);
+        } else {
+            messagesPerUser.set(otherUser, [message]);
+        }
+    });
     sessionStore.findAllSessions().forEach((session) => {
         users.push({
             userID: session.userID,
             username: session.username,
             connected: session.connected,
+            messages: messagesPerUser.get(session.userID) || [],
         });
     });
     socket.emit("users", users);
@@ -111,15 +127,18 @@ io.on("connection", (socket) => {
         userID: socket.userID,
         username: socket.username,
         connected: true,
+        messages: [],
     });
 
     // forward the private message to the right recipient (and to other tabs of the sender)
     socket.on("private message", ({ content, to }) => {
-        socket.to(to).to(socket.userID).emit("private message", {
+        const message = {
             content,
             from: socket.userID,
             to,
-        });
+        };
+        socket.to(to).to(socket.userID).emit("private message", message);
+        messageStore.saveMessage(message);
     });
 
     // notify users upon disconnection
