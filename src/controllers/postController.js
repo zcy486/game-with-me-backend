@@ -34,12 +34,12 @@ const create = async (req, res) => {
         // change role of user to companion
         const companion_id = req.body.companionId;
         let exist = await CompanionModel.findById(companion_id);
-        if(!exist) {
-            await UserModel.findByIdAndUpdate(companion_id, {__t: "Companion"});
+        if (!exist) {
+            await UserModel.findByIdAndUpdate(companion_id, { __t: "Companion" });
         }
 
         // return created post
-        return  res.status(200).json(post);
+        return res.status(200).json(post);
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -122,12 +122,12 @@ const updateStatus = async (req, res) => {
     }
 };
 
-const remove = async  (req, res) => {
+const remove = async (req, res) => {
     try {
         await PostModel.findByIdAndRemove(req.params.id).exec();
         return res
             .status(200)
-            .json({message: `Post with id${req.params.id} was deleted`});
+            .json({ message: `Post with id${req.params.id} was deleted` });
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -150,7 +150,7 @@ const listWithFilters = async (req, res) => {
         let sortType = {};
         let skipDocument = 1;
         Object.keys(req.body).forEach((key) => {
-            if(req.body[key] !== "") {
+            if (req.body[key] !== "") {
                 switch (key) {
                     case "gameId":
                         filters[key] = mongoose.Types.ObjectId(req.body[key])
@@ -158,16 +158,16 @@ const listWithFilters = async (req, res) => {
                     case "price":
                         switch (req.body[key]) {
                             case "0-5":
-                                filters[key] = {$gte: 0, $lte: 5}
+                                filters[key] = { $gte: 0, $lte: 5 }
                                 break;
                             case "6-10":
-                                filters[key] = {$gte: 6, $lte: 10}
+                                filters[key] = { $gte: 6, $lte: 10 }
                                 break;
                             case "11-20":
-                                filters[key] = {$gte: 11, $lte: 20}
+                                filters[key] = { $gte: 11, $lte: 20 }
                                 break;
                             case "20+":
-                                filters[key] = {$gte: 20}
+                                filters[key] = { $gte: 20 }
                                 break;
                             default:
                         }
@@ -175,27 +175,27 @@ const listWithFilters = async (req, res) => {
                     case "postType":
                         switch (req.body[key]) {
                             case "Carry":
-                                filters[key] = {$in: ["Carry", "All Types"]}
+                                filters[key] = { $in: ["Carry", "All Types"] }
                                 break;
                             case "Chill":
-                                filters[key] = {$in: ["Chill", "All Types"]}
+                                filters[key] = { $in: ["Chill", "All Types"] }
                                 break;
                             default:
                                 break;
                         }
                         break;
                     case "servers":
-                        filters[key] = {$all: [req.body[key]]};
+                        filters[key] = { $all: [req.body[key]] };
                         break;
                     case "platforms":
-                        filters[key] = {$all: [req.body[key]]};
+                        filters[key] = { $all: [req.body[key]] };
                         break;
                     case "sortBy":
                         //TODO: Change to orders and ratings
                         if (req.body[key] === "orders") {
-                            sortType = {"companion.orderNumber": -1}
+                            sortType = { "companion.orderNumber": -1 }
                         } else {
-                            sortType = {"companion.ratings": -1}
+                            sortType = { "companion.ratings": -1 }
                         }
                         break;
                     case "page":
@@ -209,14 +209,16 @@ const listWithFilters = async (req, res) => {
         });
 
         let result = await PostModel.aggregate([
-            {$match: filters},
-            {$lookup: {from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion"}},
-            {$sort: sortType},
-            {$facet: {
-                "stage1" : [{"$group": {_id:null, count:{$sum:1}}}],
-                    "stage2" : [ { "$skip": skipDocument}, {"$limit": 20} ],
-            }},
-            {$unwind: "$stage1"},
+            { $match: filters },
+            { $lookup: { from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion" } },
+            { $sort: sortType },
+            {
+                $facet: {
+                    "stage1": [{ "$group": { _id: null, count: { $sum: 1 } } }],
+                    "stage2": [{ "$skip": skipDocument }, { "$limit": 20 }],
+                }
+            },
+            { $unwind: "$stage1" },
         ]);
 
         //TODO: to be optimized
@@ -259,7 +261,7 @@ const listByCompanion = async (req, res) => {
     }
     try {
         let companion = await CompanionModel.findById(req.body.companionId);
-        let posts = await PostModel.find({companionId: req.body.companionId});
+        let posts = await PostModel.find({ companionId: req.body.companionId });
 
         //TODO: to be optimized
         //additional fields: gameName
@@ -267,7 +269,7 @@ const listByCompanion = async (req, res) => {
         for (const post of posts) {
             const game_id = post.gameId;
             let game = await GameModel.findById(game_id);
-            ret_posts.push({...post.toObject(), gameName: game.name});
+            ret_posts.push({ ...post.toObject(), gameName: game.name });
         }
 
         const response = {
@@ -291,6 +293,37 @@ const listByCompanion = async (req, res) => {
     }
 };
 
+const uploadScreenshots = async (req, res) => {
+
+    // TODO: handle the request
+
+    // handle the request  
+
+
+    try {
+        const screenshots = [];
+        const url = req.protocol + '://' + req.get('host') + "/uploadImages/"
+        const files = req.files;
+        for (const file of files) {
+           
+            screenshots.push(url + file.filename);
+        };
+        return res.status(200).json({ screenshots: screenshots });
+
+
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+
+}
+
+
+
+
 module.exports = {
     create,
     read,
@@ -298,4 +331,5 @@ module.exports = {
     remove,
     listWithFilters,
     listByCompanion,
+    uploadScreenshots,
 };
