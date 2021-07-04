@@ -14,6 +14,14 @@ const create = async (req, res) => {
             message: "The request body is empty",
         });
 
+        let existPost = await PostModel.findOne({companionId: req.body.companionId, gameId: req.body.gameId})
+        if (existPost) {
+            return res.status(409).json({
+                error: "Conflict",
+                message: "Post of required game already exists",
+            })
+        }
+
     // handle the request
     try {
         // create post in database
