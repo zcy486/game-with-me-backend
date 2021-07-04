@@ -64,6 +64,7 @@ router.put(
 router.post(
     "/image",
     upload.array("image"),
+    middlewares.checkAuthentication,
     postController.uploadScreenshots,
 );
 

@@ -16,7 +16,7 @@ router.post(
 
 router.put(
     "/:id",
-    middlewares.checkAuthentication,
+   
     OrderController.updateStatus);
 
 router.get("/:id", OrderController.read); // Read a order by Id
@@ -26,6 +26,9 @@ router.delete(
     middlewares.checkAuthentication,
     OrderController.remove
 ); // Delete a order by Id, needs logged in user with the admin role
+
+//Get all the orders by the companion id.
+router.get("/companion/:id", OrderController.getCompanionOrders); // Read a order by Id
 
 
 module.exports = router;
