@@ -6,7 +6,7 @@ const router = express.Router();
 const middlewares = require("../middlewares");
 const reviewController = require("../controllers/reviewController");
 
-router.review(
+router.post(
     "/",
     middlewares.checkAuthentication,
     reviewController.create

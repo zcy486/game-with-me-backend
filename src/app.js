@@ -11,7 +11,7 @@ const order = require('./routes/order');
 const postRouter = require('./routes/post')
 const gameRouter = require('./routes/game')
 const searchRouter = require('./routes/searchRouter');
-const reviewRouter = require('./routes/reviewRouter');
+const reviewRouter = require('./routes/review');
 
 const app = express();
 

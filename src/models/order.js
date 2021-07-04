@@ -33,11 +33,11 @@ const OrderSchema = new mongoose.Schema(
         thumbnail: String,
 
         //zy..date, gameId, amount of games?
-      /*   gameId: {
+        gameId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Game",
             required: true,
-        }, */
+        }, //!!
         
       
     },

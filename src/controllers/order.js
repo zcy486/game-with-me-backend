@@ -133,12 +133,12 @@ const readByUserId = async (req, res) => {
         let order = await OrderModel.find({gamerId: req.params.id}).exec();
 
         // if no order with id is found, return 404
-        if (!order)
+        if (!order){
             return res.status(404).json({
                 error: "Not Found",
                 message: `order not found`,
             });
-
+        }
         // return gotten order
         return res.status(200).json(order);
     } catch (err) {
