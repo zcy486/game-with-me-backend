@@ -1,6 +1,9 @@
 "use strict";
 
 const OrderModel = require("../models/order");
+const PostModel = require("../models/post");
+const GameModel = require("../models/game");
+const UserModel = require("../models/user");
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -15,12 +18,14 @@ const create = async (req, res) => {
         // create order in database
         const newOrder = {
             orderPrice: req.body.orderPrice,
-    
+
             orderStatus: "Created",
-            
+
             postId: req.body.postId,
-    
+
             gamerId: req.body.gamerId,
+
+            companionId: req.body.companionId,
         }
 
         let order = await OrderModel.create(newOrder);
@@ -72,8 +77,8 @@ const updateStatus = async (req, res) => {
     try {
         // find and update movie with id
         let order = await OrderModel.findByIdAndUpdate(
-            req.params.id, 
-            {orderStatus: req.body.orderStatus},
+            req.params.id,
+            { orderStatus: req.body.orderStatus },
             {
                 new: true,
                 runValidators: true,
@@ -149,6 +154,47 @@ const readByUserId = async (req, res) => {
         });
     }
 };
+const getCompanionOrders = async (req, res) => {
+ 
+
+    try {
+        let orders = await OrderModel.find({
+            companionId: req.params.id
+        }).exec();
+
+        //retrieve companion information---username, avatarUrl.
+        //retrieve post information ---gameName.
+        let infoOrders = [];
+
+        for (const order of orders) {
+
+            let gamer = await UserModel.findById(req.params.id);
+            let post = await PostModel.findById(order.postId);
+            const gameId = post.gameId;
+            let count  = order.orderPrice / post.price;
+            let game = await GameModel.findById(gameId);
+            infoOrders.push({
+                ...order.toObject(),
+                gameName: game.name,
+                gameNumber: count,
+                gamerName: gamer.username,
+                gamerAvatarUrl: gamer.avatarUrl,
+
+            });
+        }
+
+        const response = {
+            orders: infoOrders
+        }
+        return res.status(200).json(response);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
 
 module.exports = {
     create,
@@ -157,4 +203,5 @@ module.exports = {
     remove,
     list,
     readByUserId,
+    getCompanionOrders,
 };
