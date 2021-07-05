@@ -6,7 +6,7 @@ const router = express.Router();
 const middlewares = require("../middlewares");
 const OrderController = require("../controllers/order");
 
-router.get("/", OrderController.list); // List all orders
+router.get("/", middlewares.checkAuthentication, OrderController.list); // List all orders
 
 router.post(
     "/",
@@ -16,7 +16,7 @@ router.post(
 
 router.put(
     "/:id",
-   
+    middlewares.checkAuthentication,
     OrderController.updateStatus);
 
 router.get("/:id", OrderController.read); // Read a order by Id
@@ -28,7 +28,7 @@ router.delete(
 ); // Delete a order by Id, needs logged in user with the admin role
 
 //Get all the orders by the companion id.
-router.get("/companion/:id", OrderController.getCompanionOrders); // Read a order by Id
+router.get("/companion/:id", middlewares.checkAuthentication, OrderController.getCompanionOrders); // Read a order by Id
 
 
 module.exports = router;
