@@ -44,12 +44,11 @@ const io = require("socket.io")(server, {
     },
 });
 
-//{ (key: userID, value: session) }
-const allUserSessionStore = new Map();
-//{ (key: userID, value: array of messages) }
-const allUserMessageStore = new Map();
+const Chat = require("./src/models/chat");
+const Message = require("./src/models/message");
+const Session = require("./src/models/session");
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
     const userID = socket.handshake.auth.userID;
     const username = socket.handshake.auth.username;
     if (!username || !userID) {
@@ -66,25 +65,24 @@ io.use((socket, next) => {
     }
 
     // extract existing session.
-    const session = allUserSessionStore.get(userID);
+    const session = await Session.findOne({userID: userID});
     if (session) {
         socket.chatList = session.chatList;
         return next();
     }
-
     // create new session
     socket.chatList = [];
     next();
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
     // persist session
-    allUserSessionStore.set(socket.userID, {
+    await Session.findOneAndUpdate({userID: socket.userID}, {
         userID: socket.userID,
         username: socket.username,
         chatList: socket.chatList,
         connected: true,
-    });
+    }, {upsert: true});
 
     // emit session details
     socket.emit("session", {
@@ -94,69 +92,69 @@ io.on("connection", (socket) => {
     // join the "userID" room
     socket.join(socket.userID);
 
-    // add target to current chatList if not exist
+    // add target to the chatList if not exist
     if (socket.targetID && socket.targetName) {
         const targetID = socket.targetID;
         const targetName = socket.targetName;
 
+        // save each other to the chatList
+        const mySession = await Session.findOne({userID: socket.userID});
+        if (!mySession.chatList.includes(targetID)) {
+            mySession.chatList.push(targetID);
+            await mySession.save();
+        }
         // initialize the target's sessionStore if not exist
-        if (!allUserSessionStore.has(targetID)) {
-            allUserSessionStore.set(targetID, {
+        const targetSession = await Session.findOne({userID: targetID});
+        if (targetSession) {
+            if (!targetSession.chatList.includes(socket.userID)) {
+                targetSession.chatList.push(socket.userID);
+                await targetSession.save();
+            }
+        } else {
+            await Session.create({
                 userID: targetID,
                 username: targetName,
-                chatList: [],
+                chatList: [socket.userID],
                 connected: false,
             });
         }
-
-        // save each other to the chatList
-        const myChatList = allUserSessionStore.get(socket.userID).chatList;
-        if (!myChatList.includes(targetID)) {
-            myChatList.push(targetID);
-        }
-        const targetChatList = allUserSessionStore.get(targetID).chatList;
-        if (!targetChatList.includes(socket.userID)) {
-            targetChatList.push(socket.userID);
-        }
     }
 
-    // fetch existing users
+    // fetch existing users and notify them
     const users = [];
-    const myChatList = allUserSessionStore.get(socket.userID).chatList;
-    for (let value of allUserSessionStore.values()) {
-        if (myChatList.includes(value.userID)) {
-            users.push({
-                userID: value.userID,
-                username: value.username,
-                connected: value.connected,
-            });
-        }
-    }
+    const mySession = await Session.findOne({userID: socket.userID});
+    const myChatList = mySession.chatList;
+    const friends = await Session.find({"userID": {"$in": myChatList}});
+    friends.forEach((friend) => {
+        users.push({
+            userID: friend.userID,
+            username: friend.username,
+            connected: friend.connected,
+        });
+        // notify existing users
+        socket.to(friend.userID).emit("user connected", {
+            userID: socket.userID,
+            username: socket.username,
+            connected: true,
+        });
+    });
     socket.emit("users", users);
 
-    // notify existing users
-    for (let value of allUserSessionStore.values()) {
-        if (value.chatList.includes(socket.userID)) {
-            socket.to(value.userID).emit("user connected", {
-                userID: socket.userID,
-                username: socket.username,
-                connected: true,
-            });
-        }
-    }
-
-    socket.on("load messages", ({ from, to }) => {
-        const myStore = allUserMessageStore.get(from);
-        if (myStore) {
-            const messages = myStore.get(to);
-            if (messages) {
-                socket.emit("loaded messages", messages);
-            }
+    // load messages between users from and to
+    socket.on("load messages", async ({from, to}) => {
+        const chat = await Chat.findOne({
+            "$or":[
+                {"userA": from, "userB": to},
+                {"userA": to, "userB": from}
+            ]
+        }).populate("messages");
+        if (chat) {
+            socket.emit("loaded messages", chat.messages);
         }
     });
 
     // forward the private message to the right recipient (and to other tabs of the sender)
-    socket.on("private message", ({ content, to }) => {
+    socket.on("private message", async ({content, to}) => {
         const from = socket.userID;
         const message = {
             content,
@@ -164,31 +162,27 @@ io.on("connection", (socket) => {
             to,
         };
         socket.to(to).to(from).emit("private message", message);
-        const myMessageStore = allUserMessageStore.get(from);
-        if (myMessageStore) {
-            const otherUser = myMessageStore.get(to);
-            if (otherUser) {
-                otherUser.push(message);
-            } else {
-                myMessageStore.set(to, [message]);
-            }
+        // save message in the db
+        const dbMessage = await Message.create({
+            from: from,
+            to: to,
+            content: content,
+        });
+        const chat = await Chat.findOne({
+            "$or":[
+                {"userA": from, "userB": to},
+                {"userA": to, "userB": from}
+            ]
+        });
+        if (chat) {
+            chat.messages.push(dbMessage._id);
+            await chat.save();
         } else {
-            const newStore = new Map();
-            newStore.set(to, [message]);
-            allUserMessageStore.set(from, newStore);
-        }
-        const otherMessageStore = allUserMessageStore.get(to);
-        if (otherMessageStore) {
-            const messagesWithMe = otherMessageStore.get(from);
-            if (messagesWithMe) {
-                messagesWithMe.push(message);
-            } else {
-                otherMessageStore.set(from, [message]);
-            }
-        } else {
-            const newStore = new Map();
-            newStore.set(from, [message]);
-            allUserMessageStore.set(to, newStore);
+            await Chat.create({
+                userA: from,
+                userB: to,
+                messages: [dbMessage._id],
+            });
         }
     });
 
@@ -197,16 +191,12 @@ io.on("connection", (socket) => {
         const isDisconnected = matchingSockets.size === 0;
         if (isDisconnected) {
             // notify other users
-            for (let value of allUserSessionStore.values()) {
-                if (value.chatList.includes(socket.userID)) {
-                    socket.to(value.userID).emit("user disconnected", socket.userID);
-                }
-            }
+            const friends = await Session.find({chatList: socket.userID});
+            friends.forEach((friend) => {
+                socket.to(friend.userID).emit("user disconnected", socket.userID);
+            });
             // update the connection status of the session
-            allUserSessionStore.set(socket.userID, {
-                userID: socket.userID,
-                username: socket.username,
-                chatList: socket.chatList,
+            await Session.findOneAndUpdate({userID: socket.userID}, {
                 connected: false,
             });
         }
