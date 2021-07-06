@@ -19,6 +19,10 @@ const GameSchema = new mongoose.Schema({
     isPopular: {
         type: Boolean,
         required: true,
+    },
+    gamePic: {
+        type: String,
+        required: true,
     }
 });
 
