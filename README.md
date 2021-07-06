@@ -31,6 +31,11 @@ mongod --dbpath "your/path/to/database"
 
 ## Start the project
 
+**Generate games**
+```
+npm run gameGenerator
+```
+**Start project**
 ```bash
 npm start
 ```
