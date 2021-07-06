@@ -23,6 +23,10 @@ const CompanionSchema = new mongoose.Schema({
         required: true,
         default: 0,
     },
+    onlineStatus: {
+        type: String,
+        enum: ["Online", "Offline", "Busy"],
+    }
 });
 
 CompanionSchema.set("versionKey", false);

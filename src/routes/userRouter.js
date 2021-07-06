@@ -30,6 +30,7 @@ router.put("/balance/:id", middlewares.checkAuthentication, userController.updat
 router.post("/image/:id", middlewares.checkAuthentication, upload.single("image"), userController.uploadImages);
 router.delete("/image/:id", middlewares.checkAuthentication, userController.deleteImages);
 router.get("/companion/:id", middlewares.checkAuthentication, userController.getCompanionProfile);
+router.put("/:id/status", middlewares.checkAuthentication, userController.updateStatus);
 
 
 module.exports = router;

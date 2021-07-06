@@ -370,6 +370,31 @@ const deleteImages = async (req, res) => {
 
 }
 
+const updateStatus = async (req, res) => {
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+    try {
+        let user = await UserModel.findByIdAndUpdate(
+            req.params.id,
+            { onlineStatus: req.body.onlineStatus },
+            {
+                new: true,
+                runValidators: true,
+                    }
+        ).exec();
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
+
 
 
 
@@ -382,4 +407,5 @@ module.exports = {
     uploadImages,
     deleteImages,
     getCompanionProfile,
+    updateStatus,
 };
