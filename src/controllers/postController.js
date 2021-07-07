@@ -43,7 +43,13 @@ const create = async (req, res) => {
         const companion_id = req.body.companionId;
         let exist = await CompanionModel.findById(companion_id);
         if (!exist) {
-            await UserModel.findByIdAndUpdate(companion_id, { __t: "Companion" });
+            await UserModel.findByIdAndUpdate(companion_id, {__t: "Companion"});
+            await CompanionModel.findByIdAndUpdate(companion_id, {
+                onlineStatus: "Online",
+                ratings: 0,
+                orderNumber: 0,
+                reviewNumber: 0
+            })
         }
 
         // return created post
@@ -155,6 +161,7 @@ const listWithFilters = async (req, res) => {
     }
     try {
         let filters = {};
+        let statusFilter = {};
         let sortType = {};
         let skipDocument = 1;
         Object.keys(req.body).forEach((key) => {
@@ -163,6 +170,13 @@ const listWithFilters = async (req, res) => {
                     case "gameId":
                         filters[key] = mongoose.Types.ObjectId(req.body[key])
                         break;
+                    case "onlineStatus":
+                        if (req.body[key] === "All-status") {
+                            break;
+                        } else {
+                            statusFilter["companion.onlineStatus"] = req.body[key];
+                            break;
+                        }
                     case "price":
                         switch (req.body[key]) {
                             case "0-5":
@@ -199,7 +213,6 @@ const listWithFilters = async (req, res) => {
                         filters[key] = { $all: [req.body[key]] };
                         break;
                     case "sortBy":
-                        //TODO: Change to orders and ratings
                         if (req.body[key] === "orders") {
                             sortType = { "companion.orderNumber": -1 }
                         } else {
@@ -215,10 +228,10 @@ const listWithFilters = async (req, res) => {
                 }
             }
         });
-
         let result = await PostModel.aggregate([
             { $match: filters },
             { $lookup: { from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion" } },
+            { $match: statusFilter},
             { $sort: sortType },
             {
                 $facet: {
