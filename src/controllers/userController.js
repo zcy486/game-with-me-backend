@@ -244,7 +244,8 @@ const getCompanionProfile = async (req, res) => {
             res.status(200).send({
                 ratings: companion.ratings,
                 reviewNumber: companion.reviewNumber,
-                orderNumber: companion.orderNumber
+                orderNumber: companion.orderNumber,
+                onlineStatus: companion.onlineStatus,
             });
         }
     } catch (err) {
@@ -370,6 +371,26 @@ const deleteImages = async (req, res) => {
 
 }
 
+const updateStatus = async (req, res) => {
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+    try {
+        await CompanionModel.findByIdAndUpdate(req.params.id, {
+            onlineStatus: req.body.onlineStatus,
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
+
 
 
 
@@ -382,4 +403,5 @@ module.exports = {
     uploadImages,
     deleteImages,
     getCompanionProfile,
+    updateStatus,
 };
