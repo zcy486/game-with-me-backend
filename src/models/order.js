@@ -36,5 +36,4 @@ const OrderSchema = new mongoose.Schema(
 OrderSchema.set("versionKey", false);
 OrderSchema.set("timestamps", true);
 
-// Export the Movie model
 module.exports = mongoose.model("Order", OrderSchema);
