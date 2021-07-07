@@ -7,12 +7,12 @@ const middlewares = require('./middlewares');
 const cors = require("cors");
 const path = require("path");
 const userRouter = require('./routes/userRouter');
-const order = require('./routes/order');
-const postRouter = require('./routes/post')
-const gameRouter = require('./routes/game')
+const orderRouter = require('./routes/orderRouter');
+const postRouter = require('./routes/postRouter')
+const gameRouter = require('./routes/gameRouter')
 const searchRouter = require('./routes/searchRouter');
-const reviewRouter = require('./routes/review');
-const paymentRouter = require('./routes/payment');
+const reviewRouter = require('./routes/reviewRouter');
+const paymentRouter = require('./routes/paymentRouter');
 
 
 const app = express();
@@ -37,7 +37,7 @@ app.get('/', (req, res) => {
 
 //Adding routes
 app.use('/user', userRouter);
-app.use('/order', order);
+app.use('/order', orderRouter);
 app.use('/post', postRouter);
 app.use('/game', gameRouter);
 app.use('/search', searchRouter);
