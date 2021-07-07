@@ -244,7 +244,8 @@ const getCompanionProfile = async (req, res) => {
             res.status(200).send({
                 ratings: companion.ratings,
                 reviewNumber: companion.reviewNumber,
-                orderNumber: companion.orderNumber
+                orderNumber: companion.orderNumber,
+                onlineStatus: companion.onlineStatus,
             });
         }
     } catch (err) {
@@ -378,14 +379,9 @@ const updateStatus = async (req, res) => {
         });
     }
     try {
-        let user = await UserModel.findByIdAndUpdate(
-            req.params.id,
-            { onlineStatus: req.body.onlineStatus },
-            {
-                new: true,
-                runValidators: true,
-                    }
-        ).exec();
+        await CompanionModel.findByIdAndUpdate(req.params.id, {
+            onlineStatus: req.body.onlineStatus,
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).json({

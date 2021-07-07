@@ -26,6 +26,8 @@ const CompanionSchema = new mongoose.Schema({
     onlineStatus: {
         type: String,
         enum: ["Online", "Offline", "Busy"],
+        required: true,
+        default: "Online"
     }
 });
 
