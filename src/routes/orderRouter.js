@@ -4,7 +4,7 @@ const express = require("express");
 const router = express.Router();
 
 const middlewares = require("../middlewares");
-const OrderController = require("../controllers/order");
+const OrderController = require("../controllers/orderController");
 
 router.get("/", middlewares.checkAuthentication, OrderController.list); // List all orders
 
