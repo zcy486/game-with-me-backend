@@ -14,6 +14,14 @@ const create = async (req, res) => {
             message: "The request body is empty",
         });
 
+        let existPost = await PostModel.findOne({companionId: req.body.companionId, gameId: req.body.gameId})
+        if (existPost) {
+            return res.status(409).json({
+                error: "Conflict",
+                message: "Post of required game already exists",
+            })
+        }
+
     // handle the request
     try {
         // create post in database
@@ -261,7 +269,7 @@ const listByCompanion = async (req, res) => {
     }
     try {
         let companion = await CompanionModel.findById(req.body.companionId);
-        let posts = await PostModel.find({ companionId: req.body.companionId });
+        let posts = await PostModel.find({ companionId: req.body.companionId }).sort({createdAt: -1}).exec();
 
         //TODO: to be optimized
         //additional fields: gameName
@@ -269,7 +277,7 @@ const listByCompanion = async (req, res) => {
         for (const post of posts) {
             const game_id = post.gameId;
             let game = await GameModel.findById(game_id);
-            ret_posts.push({ ...post.toObject(), gameName: game.name });
+            ret_posts.push({ ...post.toObject(), gameName: game.name, gamePic: game.gamePic });
         }
 
         const response = {
@@ -305,7 +313,6 @@ const uploadScreenshots = async (req, res) => {
         const url = req.protocol + '://' + req.get('host') + "/uploadImages/"
         const files = req.files;
         for (const file of files) {
-           
             screenshots.push(url + file.filename);
         };
         return res.status(200).json({ screenshots: screenshots });

@@ -5,7 +5,7 @@ const gameModel = require("../models/game");
 // list games
 const list = async (req, res) => {
     try {
-        let allGames = await gameModel.find({}).exec();
+        let allGames = await gameModel.find({}).sort({name: 1}).exec();
         let popularGames= await gameModel.find({isPopular: true}).exec();
         const games = {
             all: allGames,

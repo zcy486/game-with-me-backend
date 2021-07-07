@@ -12,6 +12,8 @@ const postRouter = require('./routes/post')
 const gameRouter = require('./routes/game')
 const searchRouter = require('./routes/searchRouter');
 const reviewRouter = require('./routes/review');
+const paymentRouter = require('./routes/payment');
+
 
 const app = express();
 
@@ -40,5 +42,6 @@ app.use('/post', postRouter);
 app.use('/game', gameRouter);
 app.use('/search', searchRouter);
 app.use('/review', reviewRouter);
+app.use('/payment', paymentRouter);
 
 module.exports = app;

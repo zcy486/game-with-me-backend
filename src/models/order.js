@@ -21,7 +21,6 @@ const OrderSchema = new mongoose.Schema(
 
         },
 
-        //TODO: to be updated
         companionId: { type: mongoose.Schema.Types.ObjectId, ref: "Companion"},
 
 
@@ -29,16 +28,7 @@ const OrderSchema = new mongoose.Schema(
         gamerId: { type: mongoose.Schema.Types.ObjectId, ref: "User" , required: true},
 
     
-        //images to be added 
-        thumbnail: String,
-
-        //zy..date, gameId, amount of games?
-   /*      gameId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Game",
-           
-        }, //!!   */
-        
+      
     },
   
 );

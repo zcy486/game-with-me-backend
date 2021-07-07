@@ -6,9 +6,6 @@ const mongoose   = require('mongoose');
 const app        = require('./src/app');
 const config     = require('./src/config');
 
-const async = require("async");
-const Game = require("./src/models/game");
-
 // Set the port to the API.
 app.set('port', config.port);
 
@@ -40,99 +37,166 @@ server.on('error', (err) => {
 });
 
 //============CHAT===============
-// chat server relevant from here
+// chat server relevant start from here
 const io = require("socket.io")(server, {
     cors: {
         origin: "http://localhost:3000",
     },
 });
 
-const crypto = require("crypto");
-const randomId = () => crypto.randomBytes(8).toString("hex");
-const { InMemorySessionStore } = require("./chatStuff/sessionStore");
-const sessionStore = new InMemorySessionStore();
+const Chat = require("./src/models/chat");
+const Message = require("./src/models/message");
+const Session = require("./src/models/session");
 
-// chat middlewares
-io.use((socket, next) => {
-    // used on reconnection
-    const sessionID = socket.handshake.auth.sessionID;
-    if (sessionID) {
-        const session = sessionStore.findSession(sessionID);
-        if (session) {
-            socket.sessionID = sessionID;
-            socket.userID = session.userID;
-            socket.username = session.username;
-            return next();
-        }
-    }
-    // used on new connection
+io.use(async (socket, next) => {
     const userID = socket.handshake.auth.userID;
     const username = socket.handshake.auth.username;
     if (!username || !userID) {
         return next(new Error("invalid username and userID"));
     }
-    // create new session
-    socket.sessionID = randomId();
     socket.userID = userID;
     socket.username = username;
+
+    const targetID = socket.handshake.auth.targetID;
+    const targetName = socket.handshake.auth.targetName;
+    if (targetID && targetName) {
+        socket.targetID = targetID;
+        socket.targetName = targetName;
+    }
+
+    // extract existing session.
+    const session = await Session.findOne({userID: userID});
+    if (session) {
+        socket.chatList = session.chatList;
+        return next();
+    }
+    // create new session
+    socket.chatList = [];
     next();
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
     // persist session
-    sessionStore.saveSession(socket.sessionID, {
+    await Session.findOneAndUpdate({userID: socket.userID}, {
         userID: socket.userID,
         username: socket.username,
+        chatList: socket.chatList,
         connected: true,
-    });
+    }, {upsert: true});
 
     // emit session details
     socket.emit("session", {
-        sessionID: socket.sessionID,
         userID: socket.userID,
     });
 
     // join the "userID" room
     socket.join(socket.userID);
 
-    // fetch existing users
+    // add target to the chatList if not exist
+    if (socket.targetID && socket.targetName) {
+        const targetID = socket.targetID;
+        const targetName = socket.targetName;
+
+        // save each other to the chatList
+        const mySession = await Session.findOne({userID: socket.userID});
+        if (!mySession.chatList.includes(targetID)) {
+            mySession.chatList.push(targetID);
+            await mySession.save();
+        }
+        // initialize the target's sessionStore if not exist
+        const targetSession = await Session.findOne({userID: targetID});
+        if (targetSession) {
+            if (!targetSession.chatList.includes(socket.userID)) {
+                targetSession.chatList.push(socket.userID);
+                await targetSession.save();
+            }
+        } else {
+            await Session.create({
+                userID: targetID,
+                username: targetName,
+                chatList: [socket.userID],
+                connected: false,
+            });
+        }
+    }
+
+    // fetch existing users and notify them
     const users = [];
-    sessionStore.findAllSessions().forEach((session) => {
+    const mySession = await Session.findOne({userID: socket.userID});
+    const myChatList = mySession.chatList;
+    const friends = await Session.find({"userID": {"$in": myChatList}});
+    friends.forEach((friend) => {
         users.push({
-            userID: session.userID,
-            username: session.username,
-            connected: session.connected,
+            userID: friend.userID,
+            username: friend.username,
+            connected: friend.connected,
+        });
+        // notify existing users
+        socket.to(friend.userID).emit("user connected", {
+            userID: socket.userID,
+            username: socket.username,
+            connected: true,
         });
     });
     socket.emit("users", users);
 
-    // notify existing users
-    socket.broadcast.emit("user connected", {
-        userID: socket.userID,
-        username: socket.username,
-        connected: true,
+    // load messages between users from and to
+    socket.on("load messages", async ({from, to}) => {
+        const chat = await Chat.findOne({
+            "$or":[
+                {"userA": from, "userB": to},
+                {"userA": to, "userB": from}
+            ]
+        }).populate("messages");
+        if (chat) {
+            socket.emit("loaded messages", chat.messages);
+        }
     });
 
     // forward the private message to the right recipient (and to other tabs of the sender)
-    socket.on("private message", ({ content, to }) => {
-        socket.to(to).to(socket.userID).emit("private message", {
+    socket.on("private message", async ({content, to}) => {
+        const from = socket.userID;
+        const message = {
             content,
-            from: socket.userID,
+            from: from,
             to,
+        };
+        socket.to(to).to(from).emit("private message", message);
+        // save message in the db
+        const dbMessage = await Message.create({
+            from: from,
+            to: to,
+            content: content,
         });
+        const chat = await Chat.findOne({
+            "$or":[
+                {"userA": from, "userB": to},
+                {"userA": to, "userB": from}
+            ]
+        });
+        if (chat) {
+            chat.messages.push(dbMessage._id);
+            await chat.save();
+        } else {
+            await Chat.create({
+                userA: from,
+                userB: to,
+                messages: [dbMessage._id],
+            });
+        }
     });
 
-    // notify users upon disconnection
     socket.on("disconnect", async () => {
         const matchingSockets = await io.in(socket.userID).allSockets();
         const isDisconnected = matchingSockets.size === 0;
         if (isDisconnected) {
             // notify other users
-            socket.broadcast.emit("user disconnected", socket.userID);
+            const friends = await Session.find({chatList: socket.userID});
+            friends.forEach((friend) => {
+                socket.to(friend.userID).emit("user disconnected", socket.userID);
+            });
             // update the connection status of the session
-            sessionStore.saveSession(socket.sessionID, {
-                userID: socket.userID,
-                username: socket.username,
+            await Session.findOneAndUpdate({userID: socket.userID}, {
                 connected: false,
             });
         }
@@ -140,117 +204,3 @@ io.on("connection", (socket) => {
 });
 
 //============CHAT===============
-
-//TODO to be removed
-//The following part generates test data on games, posts and users.
-mongoose.Promise = global.Promise;
-
-async function gameCreate(name, allServers, allPlatforms, isPopular, cb) {
-    let exist = await Game.exists({name: name});
-    if(!exist) {
-        const gameInfo = {name, allServers, allPlatforms, isPopular};
-        const game = new Game(gameInfo);
-
-        game.save(function (err) {
-            if(err) {
-                cb(err, null);
-                return;
-            }
-            cb(null, game);
-        });
-    }
-}
-
-function createGames(cb) {
-    async.parallel([
-        function (callback) {
-            gameCreate("Apex Legends", ["Europe", "Korea", "Japan", "North America", "South America"], ["PC", "PS4", "Xbox"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Animal Crossing: New Horizons", ["N/A"], ["Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Arena of Valor", ["Europe", "Asia", "North America"], ["Switch", "IOS", "Andriod"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Black Desert Online", ["Europe", "Japan", "Korea", "North America", "SEA"], ["Switch", "IOS", "Andriod"], false, callback);
-        },
-        function (callback) {
-            gameCreate("CS:GO", ["Australia", "Europe", "Japan", "Korea", "US", "Brazil", "Chile", "Poland", "Spain", "China", "Singapore", "India"], ["PC"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Call of Duty", ["US", "Oceania", "Asia", "US"], ["PC", "PS4", "Xbox"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Dota 2", ["US", "Europe", "Asia", "South America", "Russia", "Australia", "South Africa"], ["PC"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Fortnight", ["NA West", "NA East", "Brazil", "Europe", "Asia", "China"], ["PC", "PS4", "Xbox", "Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Grand Theft Auto", ["N/A"], ["PC", "PS5", "PS4", "PS3", "Xbox One", "Xbox 360"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Humans Fall Flat", ["N/A"], ["PC", "PS4", "Xbox", "Switch", "iOS", "Android"], false, callback);
-        },
-        function (callback) {
-            gameCreate("League of Legends", ["OCE", "NA", "LAN", "BR", "EU"], ["PC"], true, callback);
-        },
-        function (callback) {
-            gameCreate("Minecraft", ["International", "Europe", "US", "China"], ["PC", "Switch", "Xbox"], true, callback);
-        },
-        function (callback) {
-            gameCreate("Monster Hunter World", ["N/A"], ["PC", "PS4", "Xbox"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Monster Hunter RISE", ["N/A"], ["Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Monopoly", ["N/A"], ["PC", "iOS", "Andriod"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Mario Kart Deluxe", ["N/A"], ["Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Overwatch", ["Asia", "US", "Europe", "China"], ["PC", "PS4", "Xbox", "Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Overcooked 2", ["N/A"], ["PC", "PS4", "Xbox One", "Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Portal 2", ["N/A"], ["PC"], false, callback);
-        },
-        function (callback) {
-            gameCreate("PUBG", ["NA", "SA", "EU", "JP", "KR", "SEA"], ["PC", "PS4", "Xbox"], true, callback);
-        },
-        function (callback) {
-            gameCreate("Rainbow Six", ["US", "Brazil", "EU", "Asia", "Australia", "Japan"], ["PC", "PS4", "Xbox"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Risk of Rain 2", ["N/A"], ["PC", "PS4", "Xbox", "Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Stardew Valley", ["N/A"], ["PC", "PS4", "Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Super Smash Bros", ["N/A"], ["Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("Splatoon 2", ["N/A"], ["Switch"], false, callback);
-        },
-        function (callback) {
-            gameCreate("UNO", ["N/A"], ["iOS", "Android", "PC"], false, callback);
-        },
-
-    ], cb);
-}
-
-
-async.series([createGames,], function (err, res) {
-    if(err) {
-        console.log("ERR: "+err);
-    }
-    else {
-        console.log("All games are generated.");
-    }
-});
