@@ -8,11 +8,11 @@ const ReviewSchema = new mongoose.Schema( {
         type: Number,
         required: true,
     },
-    label: {
+    label: [{
         type: String,
         enum: ["Humorous", "Carry in game", "Interactive", "Friendly", "Patient", "Rude"],
         required: true,
-    },
+    }],
     reviewText: {
         type: String,
         required: true,
@@ -27,7 +27,12 @@ const ReviewSchema = new mongoose.Schema( {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         required: true,
-    }
+    },
+    orderId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Order",
+        required: true,
+    },
 
 });
 

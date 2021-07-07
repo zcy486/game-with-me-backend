@@ -14,14 +14,17 @@ router.post(
 
 router.put(
     "/:id",
-    middlewares.checkAuthentication,
-    reviewController.updateStatus
+    //middlewares.checkAuthentication,
+    reviewController.updateReview
 );
 
 router.get(
     "/:id",
     reviewController.read
 );
+router.get("/companionId/:id", reviewController.readByCompanionId); //Read review list by companionId.
+
+router.get("/orderId/:id", reviewController.readByOrderId); //Read review list by orderId.
 
 router.delete(
     "/:id",

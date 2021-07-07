@@ -4,6 +4,11 @@ const OrderModel = require("../models/order");
 const PostModel = require("../models/post");
 const GameModel = require("../models/game");
 const UserModel = require("../models/user");
+const CompanionModel = require("../models/companion");
+
+const mongoose = require('mongoose');
+const ObjectId = mongoose.Types.ObjectId;
+
 
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
@@ -26,6 +31,8 @@ const create = async (req, res) => {
             gamerId: req.body.gamerId,
 
             companionId: req.body.companionId,
+                      
+            
         }
 
         let order = await OrderModel.create(newOrder);
@@ -45,16 +52,29 @@ const read = async (req, res) => {
     try {
         // get order with id from database
         let order = await OrderModel.findById(req.params.id).exec();
-
+      
         // if no order with id is found, return 404
         if (!order)
             return res.status(404).json({
                 error: "Not Found",
                 message: `order not found`,
             });
+        let companion = await CompanionModel.findById(order.companionId);
+        let post = await PostModel.findById(order.postId);
+        let game = await GameModel.findById(post.gameId);
+        let count  = order.orderPrice / post.price;
+        let fullOrder = {
+            ...order.toObject(),
+            gameName: game.name,
+            companionName: companion.username,
+            orderNumber: companion.orderNumber,
+            gameNumber: count,
+            reviewNumber: companion.reviewNumber,
+            //avatarUrl: companion.avatarUrl,
+        }
 
         // return gotten order
-        return res.status(200).json(order);
+        return res.status(200).json(fullOrder);
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -85,7 +105,7 @@ const updateStatus = async (req, res) => {
             }
         ).exec();
 
-        // return updated movie
+        // return updated order
         return res.status(200).json(order);
     } catch (err) {
         console.log(err);
@@ -134,18 +154,35 @@ const list = async (req, res) => {
 //read order lists by user's ID
 const readByUserId = async (req, res) => {
     try {
-        // get order with id from database
-        let order = await OrderModel.find({gamerId: req.params.id}).exec();
+       
+
+        console.log(req.params.id);
+        let orderResult = await OrderModel.aggregate(
+            [ { $match :  {'gamerId': ObjectId(req.params.id)}},
+
+              { $lookup : {from: PostModel.collection.name, localField: "postId", foreignField: "_id", as: "post"}},
+                {$unwind: "$post"}, 
+                { $lookup : {from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion" }},
+                {$unwind: "$companion"},
+                { $lookup : {from: UserModel.collection.name, localField: "companionId", foreignField: "_id", as: "user" }},
+                {$unwind: "$user"},
+                { $lookup: {from: GameModel.collection.name, localField: "post.gameId", foreignField: "_id", as: "game"}},
+                {$unwind: "$game"},
+                { $project: {_id: 1, orderPrice:1, orderStatus: 1, companionId: 1, createdAt: 1, companionName: "$companion.username", gameName: "$game.name", avatar: "$user.avatarUrl" }}
+            ]);            
+            
+            console.log(orderResult);
 
         // if no order with id is found, return 404
-        if (!order){
+        if (!orderResult){
             return res.status(404).json({
                 error: "Not Found",
                 message: `order not found`,
             });
         }
+   
         // return gotten order
-        return res.status(200).json(order);
+        return res.status(200).json(orderResult);
     } catch (err) {
         console.log(err);
         return res.status(500).json({

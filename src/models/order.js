@@ -33,13 +33,12 @@ const OrderSchema = new mongoose.Schema(
         thumbnail: String,
 
         //zy..date, gameId, amount of games?
-        gameId: {
+   /*      gameId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: "Game",
-            required: true,
-        }, //!!
+           
+        }, //!!   */
         
-      
     },
   
 );
@@ -47,5 +46,4 @@ const OrderSchema = new mongoose.Schema(
 OrderSchema.set("versionKey", false);
 OrderSchema.set("timestamps", true);
 
-// Export the Movie model
 module.exports = mongoose.model("Order", OrderSchema);
