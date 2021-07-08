@@ -6,6 +6,9 @@ const GameModel = require("../models/game");
 const UserModel = require("../models/user");
 const CompanionModel = require("../models/companion");
 
+const jwt = require("jsonwebtoken");
+const config = require("../config");
+
 const mongoose = require('mongoose');
 const ObjectId = mongoose.Types.ObjectId;
 
@@ -31,8 +34,8 @@ const create = async (req, res) => {
             gamerId: req.body.gamerId,
 
             companionId: req.body.companionId,
-                      
-            
+
+
         }
 
         let order = await OrderModel.create(newOrder);
@@ -52,7 +55,7 @@ const read = async (req, res) => {
     try {
         // get order with id from database
         let order = await OrderModel.findById(req.params.id).exec();
-      
+
         // if no order with id is found, return 404
         if (!order)
             return res.status(404).json({
@@ -62,7 +65,7 @@ const read = async (req, res) => {
         let companion = await CompanionModel.findById(order.companionId);
         let post = await PostModel.findById(order.postId);
         let game = await GameModel.findById(post.gameId);
-        let count  = order.orderPrice / post.price;
+        let count = order.orderPrice / post.price;
         let fullOrder = {
             ...order.toObject(),
             gameName: game.name,
@@ -120,12 +123,36 @@ const updateStatus = async (req, res) => {
 const remove = async (req, res) => {
     try {
         // find and remove order
+        let order = await OrderModel.findById(req.params.id).exec();
+        let price = order.orderPrice;
+        let user = await UserModel.findByIdAndUpdate(
+            order.gamerId,
+            { $inc: { balance: price } },
+            {
+                new: true,
+                runValidators: true,
+            }
+        ).exec();
         await OrderModel.findByIdAndRemove(req.params.id).exec();
-
         // return message that order was deleted
+        const token = jwt.sign({
+            _id: user._id,
+            username: user.username,
+            age: user.age,
+            gender: user.gender,
+            isPremium: user.isPremium,
+            balance: user.balance,
+            avatarUrl: user.avatarUrl,
+        }, config.JwtSecret, {
+            expiresIn: 86400, //24hrs
+        });
+
         return res
             .status(200)
-            .json({ message: `order with id${req.params.id} was deleted` });
+            .json({
+                token: token,
+                message: `order with id${req.params.id} was deleted`
+            });
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -154,33 +181,33 @@ const list = async (req, res) => {
 //read order lists by user's ID
 const readByUserId = async (req, res) => {
     try {
-       
+
 
         console.log(req.params.id);
         let orderResult = await OrderModel.aggregate(
-            [ { $match :  {'gamerId': ObjectId(req.params.id)}},
+            [{ $match: { 'gamerId': ObjectId(req.params.id) } },
 
-              { $lookup : {from: PostModel.collection.name, localField: "postId", foreignField: "_id", as: "post"}},
-                {$unwind: "$post"}, 
-                { $lookup : {from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion" }},
-                {$unwind: "$companion"},
-                { $lookup : {from: UserModel.collection.name, localField: "companionId", foreignField: "_id", as: "user" }},
-                {$unwind: "$user"},
-                { $lookup: {from: GameModel.collection.name, localField: "post.gameId", foreignField: "_id", as: "game"}},
-                {$unwind: "$game"},
-                { $project: {_id: 1, orderPrice:1, orderStatus: 1, companionId: 1, createdAt: 1, companionName: "$companion.username", gameName: "$game.name", avatar: "$user.avatarUrl" }}
-            ]);            
-            
-            console.log(orderResult);
+            { $lookup: { from: PostModel.collection.name, localField: "postId", foreignField: "_id", as: "post" } },
+            { $unwind: "$post" },
+            { $lookup: { from: CompanionModel.collection.name, localField: "companionId", foreignField: "_id", as: "companion" } },
+            { $unwind: "$companion" },
+            { $lookup: { from: UserModel.collection.name, localField: "companionId", foreignField: "_id", as: "user" } },
+            { $unwind: "$user" },
+            { $lookup: { from: GameModel.collection.name, localField: "post.gameId", foreignField: "_id", as: "game" } },
+            { $unwind: "$game" },
+            { $project: { _id: 1, orderPrice: 1, orderStatus: 1, companionId: 1, createdAt: 1, companionName: "$companion.username", gameName: "$game.name", avatar: "$user.avatarUrl" } }
+            ]);
+
+        console.log(orderResult);
 
         // if no order with id is found, return 404
-        if (!orderResult){
+        if (!orderResult) {
             return res.status(404).json({
                 error: "Not Found",
                 message: `order not found`,
             });
         }
-   
+
         // return gotten order
         return res.status(200).json(orderResult);
     } catch (err) {
@@ -192,7 +219,7 @@ const readByUserId = async (req, res) => {
     }
 };
 const getCompanionOrders = async (req, res) => {
- 
+
 
     try {
         let orders = await OrderModel.find({
@@ -205,10 +232,10 @@ const getCompanionOrders = async (req, res) => {
 
         for (const order of orders) {
 
-            let gamer = await UserModel.findById(req.params.id);
+            let gamer = await UserModel.findById(order.gamerId);
             let post = await PostModel.findById(order.postId);
             const gameId = post.gameId;
-            let count  = order.orderPrice / post.price;
+            let count = order.orderPrice / post.price;
             let game = await GameModel.findById(gameId);
             infoOrders.push({
                 ...order.toObject(),

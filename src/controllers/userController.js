@@ -392,6 +392,48 @@ const updateStatus = async (req, res) => {
 }
 
 
+const updateCompanionOrderNumber = async (req, res) => {
+    try {
+        let companion = await CompanionModel.findByIdAndUpdate(req.params.id, {
+             $inc: { orderNumber : 1 }
+        },
+        {
+            new: true,
+            runValidators: true,
+        }).exec();
+
+        return res.status(200).json({
+          companion
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
+
+
+const getBalance = async (req, res) => {
+    try {
+        let user = await UserModel.findById(req.params.id);
+        if(!user) {
+            res.status(200).send({});
+        }
+        else {
+            res.status(200).send({
+                balance: user.balance,
+            });
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
 
 
 module.exports = {
@@ -404,4 +446,7 @@ module.exports = {
     deleteImages,
     getCompanionProfile,
     updateStatus,
+    updateCompanionOrderNumber,
+    getBalance,
+
 };
