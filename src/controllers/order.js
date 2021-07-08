@@ -76,7 +76,7 @@ const read = async (req, res) => {
             //avatarUrl: companion.avatarUrl,
         }
 
-        // return gotten order
+        // return gotten orderƒ
         return res.status(200).json(fullOrder);
     } catch (err) {
         console.log(err);
@@ -107,9 +107,21 @@ const updateStatus = async (req, res) => {
                 runValidators: true,
             }
         ).exec();
-
+        if (req.body.orderStatus === "CompletedByGamer") {
+            let price = order.orderPrice;
+            await UserModel.findByIdAndUpdate(
+                order.companionId,
+                { $inc: { balance: price } },
+                {
+                    new: true,
+                    runValidators: true,
+                }
+            ).exec();
+        }
         // return updated order
-        return res.status(200).json(order);
+        return res.status(200).json({
+            order: order,
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -229,7 +241,7 @@ const getCompanionOrders = async (req, res) => {
         //retrieve companion information---username, avatarUrl.
         //retrieve post information ---gameName.
         let infoOrders = [];
-
+        var completedOrder;
         for (const order of orders) {
 
             let gamer = await UserModel.findById(order.gamerId);
@@ -237,6 +249,9 @@ const getCompanionOrders = async (req, res) => {
             const gameId = post.gameId;
             let count = order.orderPrice / post.price;
             let game = await GameModel.findById(gameId);
+            if (order.orderStatus === "CompletedByGamer") {
+                completedOrder = true;
+            }
             infoOrders.push({
                 ...order.toObject(),
                 gameName: game.name,
@@ -247,8 +262,29 @@ const getCompanionOrders = async (req, res) => {
             });
         }
 
-        const response = {
-            orders: infoOrders
+        var response;
+
+        if (completedOrder) {
+            let user = await UserModel.findById(req.params.id);
+            const token = jwt.sign({
+                _id: user._id,
+                username: user.username,
+                age: user.age,
+                gender: user.gender,
+                isPremium: user.isPremium,
+                balance: user.balance,
+                avatarUrl: user.avatarUrl,
+            }, config.JwtSecret, {
+                expiresIn: 86400, //24hrs
+            });
+            response = {
+                orders: infoOrders,
+                token: token,
+            }
+        } else {
+            response = {
+                orders: infoOrders
+            }
         }
         return res.status(200).json(response);
     } catch (err) {
