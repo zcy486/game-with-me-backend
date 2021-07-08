@@ -20,6 +20,8 @@ const create = async (req, res) => {
             totalEcoin: req.body.totalEcoin,
 
             account: req.body.account,
+
+            order: req.body.order,
         }
 
         let payment = await PaymentModel.create(newPayment);
