@@ -19,5 +19,7 @@ const MessageSchema = new mongoose.Schema({
 
 MessageSchema.set("versionKey", false);
 MessageSchema.set("timestamps", true);
+// expires after one week
+MessageSchema.index({createdAt: 1}, {expireAfterSeconds: 604800});
 
 module.exports = mongoose.model("Message", MessageSchema);
