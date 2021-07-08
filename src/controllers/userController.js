@@ -244,7 +244,8 @@ const getCompanionProfile = async (req, res) => {
             res.status(200).send({
                 ratings: companion.ratings,
                 reviewNumber: companion.reviewNumber,
-                orderNumber: companion.orderNumber
+                orderNumber: companion.orderNumber,
+                onlineStatus: companion.onlineStatus,
             });
         }
     } catch (err) {
@@ -370,7 +371,69 @@ const deleteImages = async (req, res) => {
 
 }
 
+const updateStatus = async (req, res) => {
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+    try {
+        await CompanionModel.findByIdAndUpdate(req.params.id, {
+            onlineStatus: req.body.onlineStatus,
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
 
+
+const updateCompanionOrderNumber = async (req, res) => {
+    try {
+        let companion = await CompanionModel.findByIdAndUpdate(req.params.id, {
+             $inc: { orderNumber : 1 }
+        },
+        {
+            new: true,
+            runValidators: true,
+        }).exec();
+
+        return res.status(200).json({
+          companion
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
+
+
+const getBalance = async (req, res) => {
+    try {
+        let user = await UserModel.findById(req.params.id);
+        if(!user) {
+            res.status(200).send({});
+        }
+        else {
+            res.status(200).send({
+                balance: user.balance,
+            });
+        }
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+};
 
 
 module.exports = {
@@ -382,4 +445,8 @@ module.exports = {
     uploadImages,
     deleteImages,
     getCompanionProfile,
+    updateStatus,
+    updateCompanionOrderNumber,
+    getBalance,
+
 };

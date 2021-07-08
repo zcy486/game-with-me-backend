@@ -44,7 +44,7 @@ const PostSchema = new mongoose.Schema( {
     },
     companionId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
+        ref: "Companion",
         required: true,
     }
 });

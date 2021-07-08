@@ -177,6 +177,42 @@ const readByCompanionId = async (req, res) => {
     }
 };
 
+const readWithLabels = async (req, res) => {
+    try {
+        let reviews = await reviewModel.find({companionId: req.params.id}).populate("gamerId");
+
+        const labelMap = new Map();
+        let resultReviews = reviews.map((review) => {
+           review.label.forEach((label) => {
+               if(labelMap.has(label)) {
+                   labelMap.set(label, labelMap.get(label) + 1);
+               } else {
+                   labelMap.set(label, 1);
+               }
+           });
+           return {
+               star: review.star,
+               reviewText: review.reviewText,
+               gamerName: review.gamerId.username,
+               gamerAvatar: review.gamerId.avatarUrl,
+               createdAt: review.createdAt,
+           }
+        });
+
+        const arrayLabels = Array.from(labelMap.entries());
+        return res.status(200).json({
+            labels: arrayLabels,
+            reviews: resultReviews,
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            message: err.message,
+        });
+    }
+}
+
 const updateReview = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
@@ -253,5 +289,5 @@ module.exports = {
     readByCompanionId,
     updateReview,
     remove,
-    
+    readWithLabels,
 };

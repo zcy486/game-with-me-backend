@@ -32,4 +32,6 @@ router.delete(
     reviewController.remove
 );
 
+router.get("/readWithLabels/:id", reviewController.readWithLabels);
+
 module.exports = router;
