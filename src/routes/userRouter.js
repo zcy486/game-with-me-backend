@@ -31,6 +31,6 @@ router.post("/image/:id", middlewares.checkAuthentication, upload.single("image"
 router.delete("/image/:id", middlewares.checkAuthentication, userController.deleteImages);
 router.get("/companion/:id", middlewares.checkAuthentication, userController.getCompanionProfile);
 router.put("/status/:id", middlewares.checkAuthentication, userController.updateStatus);
-
-
+router.put("/updateorder/:id", middlewares.checkAuthentication, userController.updateCompanionOrderNumber);
+router.get("/getbalance/:id", middlewares.checkAuthentication, userController.getBalance);
 module.exports = router;
