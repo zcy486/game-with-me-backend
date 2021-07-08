@@ -171,12 +171,8 @@ const listWithFilters = async (req, res) => {
                         filters[key] = mongoose.Types.ObjectId(req.body[key])
                         break;
                     case "onlineStatus":
-                        if (req.body[key] === "All-status") {
-                            break;
-                        } else {
-                            statusFilter["companion.onlineStatus"] = req.body[key];
-                            break;
-                        }
+                        statusFilter["companion.onlineStatus"] = req.body[key];
+                        break;
                     case "price":
                         switch (req.body[key]) {
                             case "0-5":
@@ -214,13 +210,13 @@ const listWithFilters = async (req, res) => {
                         break;
                     case "sortBy":
                         if (req.body[key] === "orders") {
-                            sortType = { "companion.orderNumber": -1 }
+                            sortType = { "companion.orderNumber": -1, createdAt: -1}
                         } else {
-                            sortType = { "companion.ratings": -1 }
+                            sortType = { "companion.ratings": -1, createdAt: -1}
                         }
                         break;
                     case "page":
-                        skipDocument = (req.body[key] - 1) * 20
+                        skipDocument = (req.body[key] - 1) * 10
                         break;
                     default:
                         filters[key] = req.body[key];
@@ -236,7 +232,7 @@ const listWithFilters = async (req, res) => {
             {
                 $facet: {
                     "stage1": [{ "$group": { _id: null, count: { $sum: 1 } } }],
-                    "stage2": [{ "$skip": skipDocument }, { "$limit": 20 }],
+                    "stage2": [{ "$skip": skipDocument }, { "$limit": 10 }],
                 }
             },
             { $unwind: "$stage1" },
