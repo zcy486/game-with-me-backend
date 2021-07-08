@@ -11,11 +11,11 @@ const ReviewSchema = new mongoose.Schema( {
     label: [{
         type: String,
         enum: ["Humorous", "Carry in game", "Interactive", "Friendly", "Patient", "Rude"],
-        required: true,
+        required: false,
     }],
     reviewText: {
         type: String,
-        required: true,
+        required: false,
     },
     //is here companionId be needed?
     companionId: {

@@ -8,7 +8,7 @@ const reviewController = require("../controllers/reviewController");
 
 router.post(
     "/",
-    middlewares.checkAuthentication,
+    //middlewares.checkAuthentication,
     reviewController.create
 );
 
