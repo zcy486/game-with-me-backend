@@ -97,9 +97,7 @@ const read = async (req, res) => {
         });
     }
 };
-
-//TODO not in use yet
-const updateStatus = async (req, res) => {
+const updatePost = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
@@ -110,7 +108,7 @@ const updateStatus = async (req, res) => {
     // handle the request
     try {
         // find and update post with id
-        let post = await PostModel.findByIdAndUpdate(
+        await PostModel.findByIdAndUpdate(
             req.params.id,
             {
                 price: req.body.price,
@@ -120,13 +118,12 @@ const updateStatus = async (req, res) => {
                 servers: req.body.servers,
                 platforms: req.body.platforms,
                 screenshots: req.body.screenshots,
-                availableTime: req.body.screenshots,
-            },
-            {
-                new: true,
-                runValidators: true,
+                availableTime: req.body.availableTime,
             }
-        )
+        );
+        return res.status(200).json({
+            status: "success",
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -337,13 +334,35 @@ const uploadScreenshots = async (req, res) => {
 
 }
 
+const editReload = async (req, res) => {
+    try {
+        const post = await PostModel.
+            findById(req.params.id).
+            populate("gameId");
+        if (!post) {
+            return res.status(404).json({
+                error: "Not Found",
+                message: `order not found`,
+            });
+        }
+        console.log(post);
+        return res.status(200).json(post);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            message: err.message,
+        });
+    }
+};
 
 
 
 module.exports = {
     create,
     read,
-    updateStatus,
+    editReload,
+    updatePost,
     remove,
     listWithFilters,
     listByCompanion,
