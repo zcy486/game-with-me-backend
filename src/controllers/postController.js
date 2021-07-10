@@ -97,9 +97,7 @@ const read = async (req, res) => {
         });
     }
 };
-
-//TODO not in use yet
-const updateStatus = async (req, res) => {
+const updatePost = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
@@ -110,7 +108,7 @@ const updateStatus = async (req, res) => {
     // handle the request
     try {
         // find and update post with id
-        let post = await PostModel.findByIdAndUpdate(
+        await PostModel.findByIdAndUpdate(
             req.params.id,
             {
                 price: req.body.price,
@@ -120,13 +118,12 @@ const updateStatus = async (req, res) => {
                 servers: req.body.servers,
                 platforms: req.body.platforms,
                 screenshots: req.body.screenshots,
-                availableTime: req.body.screenshots,
-            },
-            {
-                new: true,
-                runValidators: true,
+                availableTime: req.body.availableTime,
             }
-        )
+        );
+        return res.status(200).json({
+            status: "success",
+        });
     } catch (err) {
         console.log(err);
         return res.status(500).json({
@@ -171,12 +168,8 @@ const listWithFilters = async (req, res) => {
                         filters[key] = mongoose.Types.ObjectId(req.body[key])
                         break;
                     case "onlineStatus":
-                        if (req.body[key] === "All-status") {
-                            break;
-                        } else {
-                            statusFilter["companion.onlineStatus"] = req.body[key];
-                            break;
-                        }
+                        statusFilter["companion.onlineStatus"] = req.body[key];
+                        break;
                     case "price":
                         switch (req.body[key]) {
                             case "0-5":
@@ -214,13 +207,13 @@ const listWithFilters = async (req, res) => {
                         break;
                     case "sortBy":
                         if (req.body[key] === "orders") {
-                            sortType = { "companion.orderNumber": -1 }
+                            sortType = { "companion.orderNumber": -1, createdAt: -1}
                         } else {
-                            sortType = { "companion.ratings": -1 }
+                            sortType = { "companion.ratings": -1, createdAt: -1}
                         }
                         break;
                     case "page":
-                        skipDocument = (req.body[key] - 1) * 20
+                        skipDocument = (req.body[key] - 1) * 10
                         break;
                     default:
                         filters[key] = req.body[key];
@@ -236,7 +229,7 @@ const listWithFilters = async (req, res) => {
             {
                 $facet: {
                     "stage1": [{ "$group": { _id: null, count: { $sum: 1 } } }],
-                    "stage2": [{ "$skip": skipDocument }, { "$limit": 20 }],
+                    "stage2": [{ "$skip": skipDocument }, { "$limit": 10 }],
                 }
             },
             { $unwind: "$stage1" },
@@ -341,13 +334,35 @@ const uploadScreenshots = async (req, res) => {
 
 }
 
+const editReload = async (req, res) => {
+    try {
+        const post = await PostModel.
+            findById(req.params.id).
+            populate("gameId");
+        if (!post) {
+            return res.status(404).json({
+                error: "Not Found",
+                message: `order not found`,
+            });
+        }
+        console.log(post);
+        return res.status(200).json(post);
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal Server Error",
+            message: err.message,
+        });
+    }
+};
 
 
 
 module.exports = {
     create,
     read,
-    updateStatus,
+    editReload,
+    updatePost,
     remove,
     listWithFilters,
     listByCompanion,
