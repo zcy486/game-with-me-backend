@@ -16,15 +16,14 @@ const GameSchema = new mongoose.Schema({
         type: [String],
         required: true,
     },
-    isPopular: {
-        type: Boolean,
-        required: true,
-    },
     gamePic: {
         type: String,
         required: true,
+    },
+    numPosts: {
+        type: Number,
+        default: 0,
     }
 });
 
-//GameSchema.index({name: "text"});
 module.exports = mongoose.model("Game", GameSchema);
