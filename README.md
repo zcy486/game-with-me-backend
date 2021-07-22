@@ -1,3 +1,11 @@
+
+# Game-with-me-backend application
+
+GameWithMe is a platform to help online gamers to enhance their gaming experience and get gaming companionship with quality gamer-for-hire services provided by gaming companions.
+
+GameWithMe frontend can be found [here](https://gitlab.lrz.de/seba-master-2021/team-35/game-with-me-frontend)
+
+
 ## Prerequisites
 
 Both for the backend and frontend application:
