@@ -41,8 +41,13 @@ router.post(
 router.put(
     "/:id",
     middlewares.checkAuthentication,
-    postController.updateStatus
+    postController.updatePost,
 );
+
+router.get(
+    "/edit/:id",
+    postController.editReload,
+)
 
 router.get(
     "/:id",
@@ -53,12 +58,6 @@ router.delete(
     "/:id",
     middlewares.checkAuthentication,
     postController.remove
-);
-
-router.put(
-    "/:id",
-    middlewares.checkAuthentication,
-    postController.updateStatus
 );
 
 router.post(

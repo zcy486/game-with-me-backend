@@ -5,11 +5,14 @@ const mongoose = require("mongoose");
 const PaymentHistorySchema = new mongoose.Schema({
 
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" , required: true},
+
     type: {
         type: String,
-        enum:["Recharge","Withdraw"],
+        enum:["Recharge","Withdraw", "Paid"],
         
     },
+
+    order:  { type: mongoose.Schema.Types.ObjectId, ref: "Order"},
 
     totalEcoin: {
         type: Number,

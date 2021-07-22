@@ -179,7 +179,7 @@ const readByCompanionId = async (req, res) => {
 
 const readWithLabels = async (req, res) => {
     try {
-        let reviews = await reviewModel.find({companionId: req.params.id}).populate("gamerId");
+        let reviews = await reviewModel.find({companionId: req.params.id}).populate("gamerId").sort({createdAt: -1});
 
         const labelMap = new Map();
         let resultReviews = reviews.map((review) => {
