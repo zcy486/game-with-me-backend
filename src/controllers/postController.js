@@ -6,6 +6,7 @@ const UserModel = require("../models/user");
 const CompanionModel = require("../models/companion");
 const mongoose = require('mongoose');
 
+// create a post
 const create = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0)
@@ -71,6 +72,7 @@ const create = async (req, res) => {
     }
 };
 
+// get post information by Id
 const read = async (req, res) => {
     try {
         // get post with id from database
@@ -105,6 +107,8 @@ const read = async (req, res) => {
         });
     }
 };
+
+// edit post
 const updatePost = async (req, res) => {
     // check if the body of the request contains all necessary properties
     if (Object.keys(req.body).length === 0) {
@@ -141,22 +145,7 @@ const updatePost = async (req, res) => {
     }
 };
 
-const remove = async (req, res) => {
-    try {
-        await PostModel.findByIdAndRemove(req.params.id).exec();
-        return res
-            .status(200)
-            .json({ message: `Post with id${req.params.id} was deleted` });
-    } catch (err) {
-        console.log(err);
-        return res.status(500).json({
-            error: "Internal server error",
-            message: err.message,
-        });
-    }
-}
-
-//TODO list all posts of a given game with filters
+// list all posts of a given game with filters
 const listWithFilters = async (req, res) => {
     if (Object.keys(req.body).length === 0) {
         return res.status(400).json({
@@ -243,7 +232,6 @@ const listWithFilters = async (req, res) => {
             { $unwind: "$stage1" },
         ]);
 
-        //TODO: to be optimized
         //additional fields: companionName,ratings and reviewNumber
         let response = {};
         let new_posts = [];
@@ -285,7 +273,6 @@ const listByCompanion = async (req, res) => {
         let companion = await CompanionModel.findById(req.body.companionId);
         let posts = await PostModel.find({ companionId: req.body.companionId }).sort({createdAt: -1}).exec();
 
-        //TODO: to be optimized
         //additional fields: gameName
         let ret_posts = [];
         for (const post of posts) {
@@ -316,12 +303,6 @@ const listByCompanion = async (req, res) => {
 };
 
 const uploadScreenshots = async (req, res) => {
-
-    // TODO: handle the request
-
-    // handle the request  
-
-
     try {
         const screenshots = [];
         const url = req.protocol + '://' + req.get('host') + "/uploadImages/"
@@ -370,7 +351,6 @@ module.exports = {
     read,
     editReload,
     updatePost,
-    remove,
     listWithFilters,
     listByCompanion,
     uploadScreenshots,

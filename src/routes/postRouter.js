@@ -54,12 +54,6 @@ router.get(
     postController.read
 );
 
-router.delete(
-    "/:id",
-    middlewares.checkAuthentication,
-    postController.remove
-);
-
 router.post(
     "/image",
     upload.array("image"),
