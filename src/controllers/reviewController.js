@@ -95,7 +95,6 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get review with id from database
-        console.log(req.params.id)
         let review = await reviewModel.findById(req.params.id).exec();
         // if no review with id is found, return 404
         if (!review) {
@@ -114,7 +113,6 @@ const read = async (req, res) => {
             //TODO add more here...
         }
         // return gotten review
-        console.log(res);
         return res.status(200).json(fullreview);
     } catch (err) {
         console.log(err);
@@ -129,7 +127,6 @@ const readByOrderId = async (req, res) => {
     try {
   
 
-         console.log(req.params.id);
         let review = await reviewModel.aggregate(
             [{ $match : {'orderId': ObjectId(req.params.id)}},
                 { $lookup: {from: UserModel.collection.name, localField: "companionId", foreignField: "_id", as: "user" }},
