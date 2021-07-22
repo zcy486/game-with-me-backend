@@ -237,7 +237,7 @@ const updateBalance = async (req, res) => {
 const getCompanionProfile = async (req, res) => {
     try {
         let companion = await CompanionModel.findById(req.params.id);
-        if(!companion) {
+        if (!companion) {
             res.status(200).send({});
         }
         else {
@@ -395,15 +395,15 @@ const updateStatus = async (req, res) => {
 const updateCompanionOrderNumber = async (req, res) => {
     try {
         let companion = await CompanionModel.findByIdAndUpdate(req.params.id, {
-             $inc: { orderNumber : 1 }
+            $inc: { orderNumber: 1 }
         },
-        {
-            new: true,
-            runValidators: true,
-        }).exec();
+            {
+                new: true,
+                runValidators: true,
+            }).exec();
 
         return res.status(200).json({
-          companion
+            companion
         });
     } catch (err) {
         console.log(err);
@@ -418,7 +418,7 @@ const updateCompanionOrderNumber = async (req, res) => {
 const getBalance = async (req, res) => {
     try {
         let user = await UserModel.findById(req.params.id);
-        if(!user) {
+        if (!user) {
             res.status(200).send({});
         }
         else {
@@ -435,6 +435,73 @@ const getBalance = async (req, res) => {
     }
 };
 
+// paypal payout functions
+
+
+const withdraw = async (req, res) => {
+
+    if (Object.keys(req.body).length === 0) {
+        return res.status(400).json({
+            error: "Bad Request",
+            message: "The request body is empty",
+        });
+    }
+
+    const paypal = require("@paypal/payouts-sdk");
+    //gamewithme paypal account token;
+    let clientId = "ATNvi46ynLiR01I0n1V69zAM5gEeO0rcxx7tgDNXc1lEEY0ZlITKp7Ld9aQTAlc7rN0Hip7bMi7mR8Kd";
+    let clientSecret = "EDfbCs45Q6hRnAHMJgU8VI27s9It0wGZneVEObjRW41i5mKYIbdovhY23mn7TgYADD9a3FUf5Yloht6k";
+    //set authentication environment
+    let environment = new paypal.core.SandboxEnvironment(clientId, clientSecret);
+    let client = new paypal.core.PayPalHttpClient(environment);
+    let batch_id = req.params.id + "_" + Date.now();
+    let value = req.body.amount;
+    let receiver = req.body.receiver;
+
+
+    let requestBody = {
+        "sender_batch_header": {
+            "recipient_type": "EMAIL",
+            "email_message": "You have sent a payout!",
+            "note": "You have sent a payout for user: " + req.params.id,
+            "sender_batch_id": batch_id,
+            "email_subject": "You have a payout!"
+        },
+        "items": [{
+            "note": "This is a payout from GameWithMe!",
+            "amount": {
+                "currency": "EUR",
+                "value": value,
+            },
+            "receiver": receiver,
+            "sender_item_id": "Ecoin"
+        }]
+    }
+
+    //prepare request for payout
+    let request = new paypal.payouts.PayoutsPostRequest();
+    request.requestBody(requestBody);
+
+
+    try {
+        let response = await client.execute(request);
+        res.status(200).json({
+            response: response.result,
+        });
+     } catch (err) {
+      if (err.statusCode) {
+        //Handle server side/API failure response
+        console.log("Status code: ", err.statusCode);
+        res.status(err.statusCode).json({
+            error: JSON.parse(err.message),
+        });
+      } else {
+        //Hanlde client side failure
+        console.log(e)
+      }
+    }    
+};
+
 
 module.exports = {
     login,
@@ -448,5 +515,6 @@ module.exports = {
     updateStatus,
     updateCompanionOrderNumber,
     getBalance,
+    withdraw,
 
 };
