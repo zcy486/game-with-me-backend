@@ -69,12 +69,10 @@ const getGameInfoById = async (req, res) => {
                 message: `order not found`,
             });
         }
-        //tobedeleted
         let response = {
             name: game.name,
             allServers: game.allServers,
             allPlatforms: game.allPlatforms,
-            numPosts: game.numPosts,
         };
         return res.status(200).json(response);
     } catch (err) {
