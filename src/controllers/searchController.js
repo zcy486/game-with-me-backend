@@ -18,7 +18,6 @@ const search = async (req, res) => {
 
     try {
         let input = req.body.userInput;
-        //console.log("input: <"+input+">");
 
         let matched_games = await Game.find(
             {name: {$regex: escapeRegex(input), $options: 'i'}},

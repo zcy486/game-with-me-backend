@@ -52,6 +52,14 @@ const create = async (req, res) => {
             })
         }
 
+        // update posts in game
+        await GameModel.findByIdAndUpdate(
+            req.body.gameId,
+            {
+                $inc: { numPosts: 1 }
+            }
+        );
+
         // return created post
         return res.status(200).json(post);
     } catch (err) {
@@ -345,7 +353,6 @@ const editReload = async (req, res) => {
                 message: `order not found`,
             });
         }
-        console.log(post);
         return res.status(200).json(post);
     } catch (err) {
         console.log(err);
