@@ -92,7 +92,6 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get review with id from database
-        //console.log(req.params.id)
         let review = await reviewModel.findById(req.params.id).exec();
         // if no review with id is found, return 404
         if (!review) {
@@ -171,6 +170,7 @@ const readByCompanionId = async (req, res) => {
     }
 };
 
+// get all reviews of a companion with counted labels
 const readWithLabels = async (req, res) => {
     try {
         let reviews = await reviewModel.find({companionId: req.params.id}).populate("gamerId").sort({createdAt: -1});

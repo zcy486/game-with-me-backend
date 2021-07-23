@@ -35,8 +35,7 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         min:0,
         required: true,
-        //TODO: to be 0 
-        default: 20,
+        default: 0,
     },
 
     avatarUrl: {

@@ -2,11 +2,11 @@
 
 const gameModel = require("../models/game");
 
-// list games
+// list all games for game selector
 const list = async (req, res) => {
     try {
         let allGames = await gameModel.find({}).sort({name: 1}).exec();
-        let popularGames= await gameModel.find({isPopular: true}).sort({name: 1}).exec();
+        let popularGames = await gameModel.find({}).sort({numPosts: -1}).limit(3).exec();
         const games = {
             all: allGames,
             popular: popularGames,
@@ -21,23 +21,11 @@ const list = async (req, res) => {
     }
 };
 
-const getIdByName = async (req, res) => {
-    if (Object.keys(req.body).length === 0) {
-        return res.status(400).json({
-            error: 'Bad Request',
-            message: 'The request body is empty'
-        });
-    }
-
+// get Id of the game with most posts
+const getMostPopularId = async (req, res) => {
     try {
-        let game = await gameModel.findOne({name: req.body.gameName}).exec();
-
-        if (!game) return res.status(404).json({
-            error: 'Not Found',
-            message: `User not found`
-        });
-
-        return res.status(200).json({gameId: game._id.toString()});
+        let game = await gameModel.find({}).sort({numPosts: -1}).limit(1).exec();
+        return res.status(200).json({gameId: game[0]._id.toString()});
     } catch(err) {
         return res.status(500).json({
             error: 'Internal Server Error',
@@ -46,6 +34,7 @@ const getIdByName = async (req, res) => {
     }
 }
 
+// get game info by Id
 const getGameInfoById = async (req, res) => {
     try {
         // get game with id from database
@@ -74,6 +63,6 @@ const getGameInfoById = async (req, res) => {
 
 module.exports = {
     list,
-    getIdByName,
     getGameInfoById,
+    getMostPopularId,
 };
