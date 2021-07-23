@@ -394,17 +394,13 @@ const updateStatus = async (req, res) => {
 
 const updateCompanionOrderNumber = async (req, res) => {
     try {
-        let companion = await CompanionModel.findByIdAndUpdate(req.params.id, {
+        await CompanionModel.findByIdAndUpdate(req.params.id, {
             $inc: { orderNumber: 1 }
         },
             {
                 new: true,
                 runValidators: true,
-            }).exec();
-
-        return res.status(200).json({
-            companion
-        });
+            }).exec();    
     } catch (err) {
         console.log(err);
         return res.status(500).json({
