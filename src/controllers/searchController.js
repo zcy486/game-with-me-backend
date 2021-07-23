@@ -52,8 +52,6 @@ const search = async (req, res) => {
             }
         });
         let results = games.concat(companions);
-        //console.log("results:");
-        //console.log(results);
 
         return res.status(200).json(results);
     } catch (err) {
