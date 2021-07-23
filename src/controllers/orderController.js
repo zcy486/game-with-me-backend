@@ -195,7 +195,7 @@ const readByUserId = async (req, res) => {
     try {
 
 
-        console.log(req.params.id);
+        //console.log(req.params.id);
         let orderResult = await OrderModel.aggregate(
             [{ $match: { 'gamerId': ObjectId(req.params.id) } },
 
@@ -210,7 +210,7 @@ const readByUserId = async (req, res) => {
             { $project: { _id: 1, orderPrice: 1, orderStatus: 1, companionId: 1, createdAt: 1, companionName: "$companion.username", gameName: "$game.name", avatar: "$user.avatarUrl" } }
             ]);
 
-        console.log(orderResult);
+        //console.log(orderResult);
 
         // if no order with id is found, return 404
         if (!orderResult) {

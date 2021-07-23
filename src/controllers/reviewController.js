@@ -15,12 +15,9 @@ const handleCompanionUpdate = async (companionId, star, needUpdate, oldReview) =
         const {ratings} = await CompanionModel.findById(
             companionId
         ).exec();
-        //const newReviewNumber = (!needUpdate && reviewNumber === 0)? reviewNumber+1 : reviewNumber;
+
         const newRatings = (ratings*((needUpdate)? reviewNumber: reviewNumber-1) - oldReview + star) / reviewNumber;
-        console.log(reviewNumber)
-        console.log(ratings)
-        console.log(companionId, star, needUpdate, oldReview)
-        //console.log(newReviewNumber)
+
         let companion = await CompanionModel.findByIdAndUpdate(
             companionId,
             {
@@ -32,7 +29,7 @@ const handleCompanionUpdate = async (companionId, star, needUpdate, oldReview) =
                 runValidators: true,
             }
         );
-        console.log(companion);
+        
         return companion? true: false;
     } catch (error) {
         console.log(error)
@@ -95,7 +92,7 @@ const create = async (req, res) => {
 const read = async (req, res) => {
     try {
         // get review with id from database
-        console.log(req.params.id)
+        //console.log(req.params.id)
         let review = await reviewModel.findById(req.params.id).exec();
         // if no review with id is found, return 404
         if (!review) {
@@ -111,10 +108,9 @@ const read = async (req, res) => {
             
             companionName: companion.username,
         
-            //TODO add more here...
+            
         }
         // return gotten review
-        console.log(res);
         return res.status(200).json(fullreview);
     } catch (err) {
         console.log(err);
@@ -127,9 +123,7 @@ const read = async (req, res) => {
 
 const readByOrderId = async (req, res) => {
     try {
-  
 
-         console.log(req.params.id);
         let review = await reviewModel.aggregate(
             [{ $match : {'orderId': ObjectId(req.params.id)}},
                 { $lookup: {from: UserModel.collection.name, localField: "companionId", foreignField: "_id", as: "user" }},
