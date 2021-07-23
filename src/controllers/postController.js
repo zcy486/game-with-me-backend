@@ -129,7 +129,6 @@ const updatePost = async (req, res) => {
                 language: req.body.language,
                 servers: req.body.servers,
                 platforms: req.body.platforms,
-                screenshots: req.body.screenshots,
                 availableTime: req.body.availableTime,
             }
         );
@@ -158,6 +157,7 @@ const listWithFilters = async (req, res) => {
         let statusFilter = {};
         let sortType = {};
         let skipDocument = 1;
+        //handle filters
         Object.keys(req.body).forEach((key) => {
             if (req.body[key] !== "") {
                 switch (key) {
@@ -232,24 +232,24 @@ const listWithFilters = async (req, res) => {
             { $unwind: "$stage1" },
         ]);
 
-        //additional fields: companionName,ratings and reviewNumber
-        let response = {};
-        let new_posts = [];
+        // Response formatting
+        let response;
+        let result_posts = [];
         const posts = result[0] ? result[0].stage2 : [];
         for (const post of posts) {
-            const companion_id = post.companionId;
-            let companion = await CompanionModel.findById(companion_id);
-            new_posts.push({
-                ...post,
-                companionName: companion.username,
-                ratings: companion.ratings,
-                reviewNumber: companion.reviewNumber,
-                avatarUrl: companion.avatarUrl
+            result_posts.push({
+                _id: post._id,
+                price: post.price,
+                language: post.language,
+                companionName: post.companion[0].username,
+                ratings: post.companion[0].ratings,
+                reviewNumber: post.companion[0].reviewNumber,
+                avatarUrl: post.companion[0].avatarUrl,
             });
         }
         response = {
             count: result[0] ? result[0].stage1.count : 0,
-            posts: new_posts,
+            posts: result_posts,
         }
         return res.status(200).json(response);
     } catch (err) {
@@ -271,15 +271,13 @@ const listByCompanion = async (req, res) => {
     }
     try {
         let companion = await CompanionModel.findById(req.body.companionId);
-        let posts = await PostModel.find({ companionId: req.body.companionId }).sort({createdAt: -1}).exec();
-
-        //additional fields: gameName
-        let ret_posts = [];
-        for (const post of posts) {
-            const game_id = post.gameId;
-            let game = await GameModel.findById(game_id);
-            ret_posts.push({ ...post.toObject(), gameName: game.name, gamePic: game.gamePic });
-        }
+        const mongoose = require('mongoose');
+        const id = mongoose.Types.ObjectId(req.body.companionId);
+        let posts = await PostModel.aggregate([
+            { $match: { companionId : id } },
+            { $sort: {createdAt: -1} },
+            { $lookup: { from: GameModel.collection.name, localField: "gameId", foreignField: "_id", as: "game" }},
+        ])
 
         const response = {
             username: companion.username,
@@ -290,7 +288,7 @@ const listByCompanion = async (req, res) => {
             reviewNumber: companion.reviewNumber,
             avatarUrl: companion.avatarUrl,
 
-            posts: ret_posts
+            posts: posts
         }
         return res.status(200).json(response);
     } catch (err) {
@@ -309,7 +307,7 @@ const uploadScreenshots = async (req, res) => {
         const files = req.files;
         for (const file of files) {
             screenshots.push(url + file.filename);
-        };
+        }
         return res.status(200).json({ screenshots: screenshots });
 
 
