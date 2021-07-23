@@ -174,6 +174,7 @@ const readByCompanionId = async (req, res) => {
     }
 };
 
+// get all reviews of a companion with counted labels
 const readWithLabels = async (req, res) => {
     try {
         let reviews = await reviewModel.find({companionId: req.params.id}).populate("gamerId").sort({createdAt: -1});
