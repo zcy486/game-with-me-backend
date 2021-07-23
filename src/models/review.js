@@ -17,7 +17,6 @@ const ReviewSchema = new mongoose.Schema( {
         type: String,
         required: false,
     },
-    //is here companionId be needed?
     companionId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
