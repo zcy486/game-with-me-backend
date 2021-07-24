@@ -498,6 +498,26 @@ const withdraw = async (req, res) => {
     }    
 };
 
+const getAvatar = async (req, res) => {
+    try {
+        let user = await UserModel.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({
+                error: "Not Found",
+                message: `companion not found`,
+            });
+        }
+        return res.status(200).json({
+            avatarUrl: user.avatarUrl
+        });
+    } catch (err) {
+        console.log(err);
+        return res.status(500).json({
+            error: "Internal server error",
+            message: err.message,
+        });
+    }
+}
 
 module.exports = {
     login,
@@ -512,5 +532,5 @@ module.exports = {
     updateCompanionOrderNumber,
     getBalance,
     withdraw,
-
+    getAvatar,
 };

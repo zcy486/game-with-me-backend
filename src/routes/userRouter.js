@@ -34,5 +34,6 @@ router.put("/status/:id", middlewares.checkAuthentication, userController.update
 router.put("/updateorder/:id", middlewares.checkAuthentication, userController.updateCompanionOrderNumber);
 router.get("/getbalance/:id", middlewares.checkAuthentication, userController.getBalance);
 router.post("/withdraw/:id", middlewares.checkAuthentication, userController.withdraw);
+router.get("/avatar/:id", userController.getAvatar);
 
 module.exports = router;
